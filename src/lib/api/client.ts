@@ -52,7 +52,9 @@ export function getErrorMessage(err: unknown, fallback = "Something went wrong")
       if (typeof detail === "string") return detail;
       if (Array.isArray(detail)) {
         const messages = detail
-          .map((entry) => (entry && typeof entry === "object" && "msg" in entry ? String(entry.msg) : null))
+          .map((entry) =>
+            entry && typeof entry === "object" && "msg" in entry ? String(entry.msg) : null,
+          )
           .filter((m): m is string => Boolean(m));
         if (messages.length > 0) return messages.join("; ");
       }
@@ -70,35 +72,35 @@ type OperationFor<P extends keyof Paths, M extends Method> = M extends keyof Pat
   : never;
 
 /** The JSON request body type for a given path+method, or `never` if it takes none. */
-type RequestBodyFor<P extends keyof Paths, M extends Method> = OperationFor<P, M> extends {
-  requestBody: { content: { "application/json": infer B } };
-}
-  ? B
-  : never;
+type RequestBodyFor<P extends keyof Paths, M extends Method> =
+  OperationFor<P, M> extends {
+    requestBody: { content: { "application/json": infer B } };
+  }
+    ? B
+    : never;
 
 /** The JSON success-response (2xx) type for a given path+method. */
-type SuccessResponseFor<P extends keyof Paths, M extends Method> = OperationFor<P, M> extends {
-  responses: infer R;
-}
-  ? {
-      [K in keyof R]: K extends 200 | 201 | 204
-        ? R[K] extends { content: { "application/json": infer T } }
-          ? T
-          : R[K] extends { content?: never }
-            ? void
-            : never
-        : never;
-    }[keyof R]
-  : never;
+type SuccessResponseFor<P extends keyof Paths, M extends Method> =
+  OperationFor<P, M> extends {
+    responses: infer R;
+  }
+    ? {
+        [K in keyof R]: K extends 200 | 201 | 204
+          ? R[K] extends { content: { "application/json": infer T } }
+            ? T
+            : R[K] extends { content?: never }
+              ? void
+              : never
+          : never;
+      }[keyof R]
+    : never;
 
 type ApiFetchOptions<P extends keyof Paths, M extends Method> = Omit<
   RequestInit,
   "body" | "method"
 > & {
   method?: M;
-} & ([RequestBodyFor<P, M>] extends [never]
-    ? { body?: never }
-    : { body: RequestBodyFor<P, M> });
+} & ([RequestBodyFor<P, M>] extends [never] ? { body?: never } : { body: RequestBodyFor<P, M> });
 
 /**
  * Thin typed fetch wrapper around the backend API.
@@ -212,4 +214,51 @@ async function tryRefresh(): Promise<boolean> {
 /** Calls the backend's health check endpoint (GET /api/v1/health). */
 export function getHealth() {
   return apiFetch("/api/v1/health", { method: "get" });
+}
+
+/**
+ * Raw fetch for requests apiFetch can't express — multipart/form-data
+ * bodies (content import/intake) and non-JSON responses (YAML export) —
+ * while still sharing apiFetch's auth-header injection and one-shot
+ * 401-refresh-and-retry behavior. `init.body` is passed through untouched
+ * (a `FormData` instance, typically) and no `Content-Type` header is set by
+ * this wrapper so the browser can add the correct multipart boundary
+ * itself; pass one explicitly via `init.headers` for non-multipart callers.
+ *
+ * Returns the raw `Response` so callers decide how to read it (JSON text,
+ * blob, or inspecting headers like `Content-Disposition`) — unlike
+ * apiFetch, which always parses JSON/text and unwraps to the body.
+ */
+export async function authFetch(
+  path: string,
+  init: RequestInit = {},
+  isRetry = false,
+): Promise<Response> {
+  const authHeader = getAuthHeader();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      ...authHeader,
+      ...init.headers,
+    },
+  });
+
+  if (response.status === 401 && !isRetry && Object.keys(authHeader).length > 0) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return authFetch(path, init, true);
+    }
+  }
+
+  return response;
+}
+
+/** Throws ApiError from a non-ok raw Response, parsing its body the same
+ * way doFetch does (JSON when possible, else text) so getErrorMessage()
+ * works uniformly across apiFetch and authFetch callers. */
+export async function throwIfNotOk(response: Response): Promise<void> {
+  if (response.ok) return;
+  const isJson = response.headers.get("content-type")?.includes("application/json");
+  const data = isJson ? await response.json() : await response.text();
+  throw new ApiError(response.status, data);
 }
