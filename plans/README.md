@@ -1,12 +1,40 @@
 # resume-saas-web — Implementation Plans
 
-Next.js frontend for [`resume-saas`](https://github.com/ShubhankarD/resume-saas) — AI-powered
-resume building, evaluation, and job application automation.
+Next.js frontend for [`resume-saas`](https://github.com/ShubhankarD/resume-saas) — the real
+product frontend for **ResumeAId** (`resumeaid.app`), AI-powered resume building, evaluation, and
+job application automation.
 
 **Stack**: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui + TanStack Query
 
 **Backend repo**: [`resume-saas`](https://github.com/ShubhankarD/resume-saas) — all 9 backend
 phases are complete; this frontend consumes its REST/SSE API.
+
+## Brand — ResumeAId (discovered 2026-09-13, locked, not up for re-derivation)
+
+This project is the real frontend for a product with a live domain and an active waitlist, not a
+generic/interchangeable SaaS UI. A separate repo, `resumeaid-coming-soon`, has been running a
+deployed coming-soon page + waitlist signup at `resumeaid.app` (Cloud Run, Firestore) since before
+this frontend existed, and its own `CLAUDE.md` states as a hard rule: *"`theme.css` is locked in...
+when the real product frontend is built, copy this file's tokens/component verbatim rather than
+re-deriving the brand."*
+
+**Palette** (source: `resumeaid-coming-soon/theme.css`):
+```css
+--color-charcoal: #1A1A1A;
+--color-teal: #005B60;
+--color-sand: #E5DCCB;
+--color-amber: #FFBF00;
+--font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+```
+
+**Wordmark**: live text (not a logo image), "resumeaid.app" with the "aı" inside "aid" set in a
+diagonal-corner teal chip and an amber accent standing in for the dot of a dotless "ı" (U+0131).
+Copy `theme.css`'s `.wordmark`/`.wordmark .ai`/`.wordmark .ai .i`/`.wordmark .ai .i .dot`/
+`.wordmark .suffix` CSS rules verbatim — don't reimplement from description.
+
+F1's scaffold shipped a placeholder indigo Tailwind theme (this brand context wasn't known yet at
+the time) — replacing it with the above is its own tracked issue, not folded silently into another
+phase's work.
 
 ## Why now
 
