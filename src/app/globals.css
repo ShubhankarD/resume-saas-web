@@ -4,6 +4,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * ResumeAId brand tokens — ported verbatim from resumeaid-coming-soon's
+ * theme.css (the canonical source; do not re-derive these values).
+ * Tailwind v4 reads @theme to generate utilities, so these are mirrored
+ * here as --color-* the same way theme.css's own comment documents for
+ * any Tailwind v4 consumer. --font-sans is bound separately below by
+ * next/font/google (see layout.tsx), not hardcoded here.
+ */
+@theme {
+  --color-charcoal: #1a1a1a;
+  --color-teal: #005b60;
+  --color-sand: #e5dccb;
+  --color-amber: #ffbf00;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -48,73 +63,83 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Dark-only by design: the ResumeAId brand (resumeaid-coming-soon) is
+ * charcoal-background/sand-text throughout with no light variant, and
+ * the wordmark's own contrast (sand text, white-on-teal chip, amber
+ * accent) is tuned specifically against a dark ground. Rather than
+ * invent an unreviewed light theme, this app renders the single dark
+ * brand palette unconditionally: :root itself carries the dark values,
+ * and .dark mirrors :root exactly so behavior is identical whether or
+ * not a future toggle ever adds a "dark" class.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.47 0.17 264);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.94 0.03 264);
-  --accent-foreground: oklch(0.3 0.1 264);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.47 0.17 264);
-  --chart-1: oklch(0.47 0.17 264);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --background: var(--color-charcoal);
+  --foreground: var(--color-sand);
+  --card: color-mix(in oklch, var(--color-charcoal), white 6%);
+  --card-foreground: var(--color-sand);
+  --popover: color-mix(in oklch, var(--color-charcoal), white 8%);
+  --popover-foreground: var(--color-sand);
+  --primary: var(--color-teal);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: color-mix(in oklch, var(--color-charcoal), white 12%);
+  --secondary-foreground: var(--color-sand);
+  --muted: color-mix(in oklch, var(--color-charcoal), white 9%);
+  --muted-foreground: color-mix(in oklch, var(--color-sand), transparent 35%);
+  --accent: var(--color-amber);
+  --accent-foreground: var(--color-charcoal);
+  --destructive: oklch(0.7 0.19 22);
+  --border: color-mix(in oklch, var(--color-sand), transparent 88%);
+  --input: color-mix(in oklch, var(--color-sand), transparent 80%);
+  --ring: var(--color-teal);
+  --chart-1: var(--color-teal);
+  --chart-2: var(--color-amber);
+  --chart-3: var(--color-sand);
+  --chart-4: color-mix(in oklch, var(--color-teal), white 25%);
+  --chart-5: color-mix(in oklch, var(--color-amber), var(--color-charcoal) 25%);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.47 0.17 264);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0.03 264);
-  --sidebar-accent-foreground: oklch(0.3 0.1 264);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.47 0.17 264);
+  --sidebar: color-mix(in oklch, var(--color-charcoal), white 4%);
+  --sidebar-foreground: var(--color-sand);
+  --sidebar-primary: var(--color-teal);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: var(--color-amber);
+  --sidebar-accent-foreground: var(--color-charcoal);
+  --sidebar-border: color-mix(in oklch, var(--color-sand), transparent 88%);
+  --sidebar-ring: var(--color-teal);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.75 0.14 264);
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.3 0.06 264);
-  --accent-foreground: oklch(0.9 0.05 264);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.75 0.14 264);
-  --chart-1: oklch(0.75 0.14 264);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: var(--color-charcoal);
+  --foreground: var(--color-sand);
+  --card: color-mix(in oklch, var(--color-charcoal), white 6%);
+  --card-foreground: var(--color-sand);
+  --popover: color-mix(in oklch, var(--color-charcoal), white 8%);
+  --popover-foreground: var(--color-sand);
+  --primary: var(--color-teal);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: color-mix(in oklch, var(--color-charcoal), white 12%);
+  --secondary-foreground: var(--color-sand);
+  --muted: color-mix(in oklch, var(--color-charcoal), white 9%);
+  --muted-foreground: color-mix(in oklch, var(--color-sand), transparent 35%);
+  --accent: var(--color-amber);
+  --accent-foreground: var(--color-charcoal);
+  --destructive: oklch(0.7 0.19 22);
+  --border: color-mix(in oklch, var(--color-sand), transparent 88%);
+  --input: color-mix(in oklch, var(--color-sand), transparent 80%);
+  --ring: var(--color-teal);
+  --chart-1: var(--color-teal);
+  --chart-2: var(--color-amber);
+  --chart-3: var(--color-sand);
+  --chart-4: color-mix(in oklch, var(--color-teal), white 25%);
+  --chart-5: color-mix(in oklch, var(--color-amber), var(--color-charcoal) 25%);
+  --sidebar: color-mix(in oklch, var(--color-charcoal), white 4%);
+  --sidebar-foreground: var(--color-sand);
+  --sidebar-primary: var(--color-teal);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: var(--color-amber);
+  --sidebar-accent-foreground: var(--color-charcoal);
+  --sidebar-border: color-mix(in oklch, var(--color-sand), transparent 88%);
+  --sidebar-ring: var(--color-teal);
 }
 
 @layer base {
@@ -127,4 +152,63 @@
   html {
     @apply font-sans;
   }
+}
+
+/* ---------- Wordmark ----------
+ * Ported verbatim from resumeaid-coming-soon/theme.css. See
+ * src/components/wordmark.tsx for the component that renders this
+ * markup shape; keep these rules in sync with the canonical source.
+ */
+.wordmark {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-sand);
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.wordmark .ai {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  line-height: 1;
+  padding: 0 0.1em;
+  margin: 0 0.02em;
+  position: relative;
+  z-index: 1;
+}
+
+.wordmark .ai::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -0.04em;
+  bottom: 0;
+  background: var(--color-teal);
+  border-radius: 0.24em 0.06em 0.24em 0.06em;
+  z-index: -1;
+}
+
+.wordmark .ai .i {
+  position: relative;
+  display: inline-block;
+}
+
+.wordmark .ai .i .dot {
+  position: absolute;
+  left: 50%;
+  top: 0.06em;
+  transform: translateX(-50%);
+  width: 0.15em;
+  height: 0.15em;
+  border-radius: 0.04em;
+  background: var(--color-amber);
+}
+
+.wordmark .suffix {
+  opacity: 0.6;
+  font-weight: 700;
 }
