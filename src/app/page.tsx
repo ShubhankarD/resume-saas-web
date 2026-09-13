@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Wordmark } from "@/components/wordmark";
 import { ApiError, getHealth } from "@/lib/api/client";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,9 @@ export default async function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight">resume-saas</h1>
+        <h1>
+          <Wordmark className="text-4xl" />
+        </h1>
         <p className="text-muted-foreground">
           Frontend scaffold — this page calls the real backend health check end-to-end.
         </p>
