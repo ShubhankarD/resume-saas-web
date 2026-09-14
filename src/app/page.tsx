@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wordmark } from "@/components/wordmark";
 import { ApiError, getHealth } from "@/lib/api/client";
+import { cn } from "cn";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +24,16 @@ export default async function Home() {
           <Wordmark className="text-4xl" />
         </h1>
         <p className="text-muted-foreground">
-          Frontend scaffold — this page calls the real backend health check end-to-end.
+          AI-tailored resumes and job applications, built from one reusable content library.
         </p>
+        <div className="mt-2 flex gap-3">
+          <Link href="/register" className={cn(buttonVariants({ variant: "default" }))}>
+            Get started
+          </Link>
+          <Link href="/login" className={cn(buttonVariants({ variant: "outline" }))}>
+            Log in
+          </Link>
+        </div>
       </div>
 
       <Card className="w-full max-w-md">

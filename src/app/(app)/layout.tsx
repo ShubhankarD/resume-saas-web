@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/auth/store";
 import { useLogout } from "@/lib/auth/use-logout";
 import { Button } from "@/components/ui/button";
+import { Wordmark } from "@/components/wordmark";
 
 /**
  * Protected app shell. Auth status lives client-side only (the access token
@@ -40,8 +41,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-border flex items-center justify-between border-b px-6 py-3">
-        <Link href="/dashboard" className="font-semibold tracking-tight">
-          resume-saas
+        <Link href="/dashboard">
+          <Wordmark className="text-lg" />
         </Link>
         <div className="flex items-center gap-4">
           <Link href="/content" className="text-muted-foreground hover:text-foreground text-sm">
