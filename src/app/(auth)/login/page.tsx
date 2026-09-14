@@ -13,7 +13,7 @@ import { getErrorMessage } from "@/lib/api/client";
 import { getMe, googleAuth, login } from "@/lib/auth/api";
 import { useAuthStore } from "@/lib/auth/store";
 import { storeTokens } from "@/lib/auth/token-storage";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { GoogleSignInButton, isGoogleSignInConfigured } from "@/components/auth/GoogleSignInButton";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -58,7 +58,7 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <form
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-5"
           onSubmit={handleSubmit((values) => mutation.mutate(values))}
         >
           <div className="flex flex-col gap-1.5">
@@ -100,20 +100,24 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="my-4 flex items-center gap-3">
-          <div className="bg-border h-px flex-1" />
-          <span className="text-muted-foreground text-xs">or</span>
-          <div className="bg-border h-px flex-1" />
-        </div>
+        {isGoogleSignInConfigured() && (
+          <>
+            <div className="my-4 flex items-center gap-3">
+              <div className="bg-border h-px flex-1" />
+              <span className="text-muted-foreground text-xs">or</span>
+              <div className="bg-border h-px flex-1" />
+            </div>
 
-        <GoogleSignInButton
-          onIdToken={(idToken) => googleMutation.mutate(idToken)}
-          disabled={googleMutation.isPending}
-        />
-        {googleMutation.isError && (
-          <p className="text-destructive mt-2 text-sm">
-            {getErrorMessage(googleMutation.error, "Google sign-in failed")}
-          </p>
+            <GoogleSignInButton
+              onIdToken={(idToken) => googleMutation.mutate(idToken)}
+              disabled={googleMutation.isPending}
+            />
+            {googleMutation.isError && (
+              <p className="text-destructive mt-2 text-sm">
+                {getErrorMessage(googleMutation.error, "Google sign-in failed")}
+              </p>
+            )}
+          </>
         )}
 
         <p className="text-muted-foreground mt-4 text-center text-sm">

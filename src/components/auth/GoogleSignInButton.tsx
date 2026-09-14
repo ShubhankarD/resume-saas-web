@@ -72,6 +72,16 @@ interface GoogleSignInButtonProps {
 }
 
 /**
+ * Whether Google sign-in has a client ID configured. Callers use this to
+ * decide whether to render the "or" divider around <GoogleSignInButton />
+ * at all — the button itself renders nothing when unconfigured, but the
+ * divider needs the same check so it doesn't appear above an empty gap.
+ */
+export function isGoogleSignInConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+}
+
+/**
  * Renders Google's own "Sign in with Google" button via the Identity
  * Services JS client and hands the resulting ID token (JWT) up to the
  * caller, which POSTs it to /api/v1/auth/google as {"id_token": ...} — see
@@ -119,11 +129,10 @@ export function GoogleSignInButton({ onIdToken, disabled }: GoogleSignInButtonPr
   }, [clientId, disabled, onIdToken]);
 
   if (!clientId) {
-    return (
-      <p className="text-muted-foreground border-border rounded-md border border-dashed p-3 text-xs">
-        Google sign-in is not configured in this environment (NEXT_PUBLIC_GOOGLE_CLIENT_ID unset).
-      </p>
-    );
+    // No implementation detail (env var names, etc.) in user-facing copy —
+    // simplest correct behavior is to omit the Google option entirely when
+    // it isn't configured, rather than exposing internal config to users.
+    return null;
   }
 
   if (error) {
