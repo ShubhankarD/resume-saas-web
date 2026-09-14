@@ -50,6 +50,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Link href="/profiles" className="text-muted-foreground hover:text-foreground text-sm">
             Profiles
           </Link>
+          <Link href="/jds" className="text-muted-foreground hover:text-foreground text-sm">
+            Job descriptions
+          </Link>
+          <Link href="/evaluations" className="text-muted-foreground hover:text-foreground text-sm">
+            Evaluations
+          </Link>
           {user && (
             <span data-testid="current-user" className="text-muted-foreground text-sm">
               {user.display_name}
