@@ -44,6 +44,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           resume-saas
         </Link>
         <div className="flex items-center gap-4">
+          <Link href="/content" className="text-muted-foreground hover:text-foreground text-sm">
+            Content
+          </Link>
           {user && (
             <span data-testid="current-user" className="text-muted-foreground text-sm">
               {user.display_name}
