@@ -57,6 +57,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Link href="/evaluations" className="text-muted-foreground hover:text-foreground text-sm">
             Evaluations
           </Link>
+          <Link href="/curations" className="text-muted-foreground hover:text-foreground text-sm">
+            AI curation
+          </Link>
           {user && (
             <span data-testid="current-user" className="text-muted-foreground text-sm">
               {user.display_name}
