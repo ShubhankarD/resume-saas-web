@@ -67,7 +67,7 @@ export function BuildPanel({
             className="text-primary text-sm underline underline-offset-4"
           >
             Open latest PDF ({lastBuild.page_count} page{lastBuild.page_count === 1 ? "" : "s"},{" "}
-            {Math.round((lastBuild.fill_pct ?? 0) * 100)}% fill)
+            {Math.round(lastBuild.fill_pct ?? 0)}% fill)
           </a>
         )}
 
