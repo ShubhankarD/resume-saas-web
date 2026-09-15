@@ -64,81 +64,84 @@
 }
 
 /*
- * Dark-only by design: the ResumeAId brand (resumeaid-coming-soon) is
- * charcoal-background/sand-text throughout with no light variant, and
- * the wordmark's own contrast (sand text, white-on-teal chip, amber
- * accent) is tuned specifically against a dark ground. Rather than
- * invent an unreviewed light theme, this app renders the single dark
- * brand palette unconditionally: :root itself carries the dark values,
- * and .dark mirrors :root exactly so behavior is identical whether or
- * not a future toggle ever adds a "dark" class.
+ * Light-by-default, app-wide (issue #17): a visual review of the live app
+ * found the dark charcoal/sand brand ground reading as dated on real
+ * screens. resume-saas-web now renders white background / near-black text
+ * everywhere, keeping --color-teal and --color-amber as the accent colors
+ * (primary actions, focus rings, the wordmark's chip + dot) rather than
+ * going fully monochrome. This is a deliberate, confirmed divergence from
+ * resumeaid-coming-soon's dark brand doc, scoped to this repo only —
+ * resumeaid-coming-soon is untouched and keeps its dark look for now.
+ * :root itself carries the light values, and .dark mirrors :root exactly
+ * (same "no real toggle yet" reasoning as before) so behavior is identical
+ * whether or not a future toggle ever adds a "dark" class.
  */
 :root {
-  --background: var(--color-charcoal);
-  --foreground: var(--color-sand);
-  --card: color-mix(in oklch, var(--color-charcoal), white 6%);
-  --card-foreground: var(--color-sand);
-  --popover: color-mix(in oklch, var(--color-charcoal), white 8%);
-  --popover-foreground: var(--color-sand);
+  --background: oklch(1 0 0);
+  --foreground: var(--color-charcoal);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--color-charcoal);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--color-charcoal);
   --primary: var(--color-teal);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: color-mix(in oklch, var(--color-charcoal), white 12%);
-  --secondary-foreground: var(--color-sand);
-  --muted: color-mix(in oklch, var(--color-charcoal), white 9%);
-  --muted-foreground: color-mix(in oklch, var(--color-sand), transparent 35%);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: var(--color-charcoal);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
   --accent: var(--color-amber);
   --accent-foreground: var(--color-charcoal);
-  --destructive: oklch(0.7 0.19 22);
-  --border: color-mix(in oklch, var(--color-sand), transparent 88%);
-  --input: color-mix(in oklch, var(--color-sand), transparent 80%);
+  --destructive: oklch(0.55 0.22 25);
+  --border: oklch(0.89 0 0);
+  --input: oklch(0.89 0 0);
   --ring: var(--color-teal);
   --chart-1: var(--color-teal);
   --chart-2: var(--color-amber);
-  --chart-3: var(--color-sand);
-  --chart-4: color-mix(in oklch, var(--color-teal), white 25%);
+  --chart-3: oklch(0.55 0.04 250);
+  --chart-4: color-mix(in oklch, var(--color-teal), black 25%);
   --chart-5: color-mix(in oklch, var(--color-amber), var(--color-charcoal) 25%);
   --radius: 0.625rem;
-  --sidebar: color-mix(in oklch, var(--color-charcoal), white 4%);
-  --sidebar-foreground: var(--color-sand);
+  --sidebar: oklch(0.98 0 0);
+  --sidebar-foreground: var(--color-charcoal);
   --sidebar-primary: var(--color-teal);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: var(--color-amber);
   --sidebar-accent-foreground: var(--color-charcoal);
-  --sidebar-border: color-mix(in oklch, var(--color-sand), transparent 88%);
+  --sidebar-border: oklch(0.89 0 0);
   --sidebar-ring: var(--color-teal);
 }
 
 .dark {
-  --background: var(--color-charcoal);
-  --foreground: var(--color-sand);
-  --card: color-mix(in oklch, var(--color-charcoal), white 6%);
-  --card-foreground: var(--color-sand);
-  --popover: color-mix(in oklch, var(--color-charcoal), white 8%);
-  --popover-foreground: var(--color-sand);
+  --background: oklch(1 0 0);
+  --foreground: var(--color-charcoal);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--color-charcoal);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--color-charcoal);
   --primary: var(--color-teal);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: color-mix(in oklch, var(--color-charcoal), white 12%);
-  --secondary-foreground: var(--color-sand);
-  --muted: color-mix(in oklch, var(--color-charcoal), white 9%);
-  --muted-foreground: color-mix(in oklch, var(--color-sand), transparent 35%);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: var(--color-charcoal);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
   --accent: var(--color-amber);
   --accent-foreground: var(--color-charcoal);
-  --destructive: oklch(0.7 0.19 22);
-  --border: color-mix(in oklch, var(--color-sand), transparent 88%);
-  --input: color-mix(in oklch, var(--color-sand), transparent 80%);
+  --destructive: oklch(0.55 0.22 25);
+  --border: oklch(0.89 0 0);
+  --input: oklch(0.89 0 0);
   --ring: var(--color-teal);
   --chart-1: var(--color-teal);
   --chart-2: var(--color-amber);
-  --chart-3: var(--color-sand);
-  --chart-4: color-mix(in oklch, var(--color-teal), white 25%);
+  --chart-3: oklch(0.55 0.04 250);
+  --chart-4: color-mix(in oklch, var(--color-teal), black 25%);
   --chart-5: color-mix(in oklch, var(--color-amber), var(--color-charcoal) 25%);
-  --sidebar: color-mix(in oklch, var(--color-charcoal), white 4%);
-  --sidebar-foreground: var(--color-sand);
+  --sidebar: oklch(0.98 0 0);
+  --sidebar-foreground: var(--color-charcoal);
   --sidebar-primary: var(--color-teal);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: var(--color-amber);
   --sidebar-accent-foreground: var(--color-charcoal);
-  --sidebar-border: color-mix(in oklch, var(--color-sand), transparent 88%);
+  --sidebar-border: oklch(0.89 0 0);
   --sidebar-ring: var(--color-teal);
 }
 
@@ -148,9 +151,17 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Regular weight reads thin/washed-out against the new white ground —
+       medium weight keeps text feeling sharp without any component having
+       to opt in individually. */
+    font-weight: 500;
   }
   html {
     @apply font-sans;
+    /* Slightly larger base than the 16px browser default so body copy
+       doesn't look small on the white background (also nudges every
+       rem-based spacing/touch-target utility up proportionally). */
+    font-size: 106.25%;
   }
 }
 
@@ -163,7 +174,7 @@
   font-family: var(--font-sans);
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: var(--color-sand);
+  color: var(--foreground);
   display: inline-flex;
   align-items: baseline;
 }

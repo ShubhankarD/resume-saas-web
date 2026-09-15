@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
       </CardHeader>
       <CardContent>
         <form
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-5"
           onSubmit={handleSubmit((values) => mutation.mutate(values))}
         >
           <div className="flex flex-col gap-1.5">

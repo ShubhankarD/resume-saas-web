@@ -66,11 +66,11 @@ export default function RegisterPage() {
     <Card>
       <CardHeader>
         <CardTitle>Create an account</CardTitle>
-        <CardDescription>Start building your resume with resume-saas.</CardDescription>
+        <CardDescription>Start building your resume with ResumeAId.</CardDescription>
       </CardHeader>
       <CardContent>
         <form
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-5"
           onSubmit={handleSubmit((values) => mutation.mutate(values))}
         >
           <div className="flex flex-col gap-1.5">
