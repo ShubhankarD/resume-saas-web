@@ -18,7 +18,7 @@ export default function EvaluationDetailPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Evaluation</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Evaluation</h1>
         <Button variant="outline" size="sm" onClick={() => router.push("/evaluations")}>
           Back to list
         </Button>

@@ -66,7 +66,7 @@ export function BulletRow({
 
   if (!editing) {
     return (
-      <li className="border-border flex items-start justify-between gap-2 rounded-lg border px-3 py-2">
+      <li className="border-border flex items-start justify-between gap-2 rounded-lg border px-5 py-4">
         <div className="flex flex-1 flex-col gap-1">
           <p className="text-sm">{bullet.text}</p>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -96,7 +96,7 @@ export function BulletRow({
   }
 
   return (
-    <li className="border-border rounded-lg border px-3 py-2">
+    <li className="border-border rounded-lg border px-5 py-4">
       <form
         onSubmit={handleSubmit(async (values) => {
           setUpdateError(null);

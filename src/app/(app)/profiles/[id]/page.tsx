@@ -109,7 +109,7 @@ export default function ProfileEditorPage() {
         <Button variant="ghost" size="icon-sm" nativeButton={false} render={<Link href="/profiles" />}>
           <ArrowLeft />
         </Button>
-        <h1 className="font-heading text-xl font-semibold" data-testid="profile-editor-label">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50" data-testid="profile-editor-label">
           {draft.label}
         </h1>
       </div>
