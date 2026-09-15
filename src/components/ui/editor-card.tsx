@@ -34,7 +34,9 @@ function stopAll(event: React.SyntheticEvent): void {
 /**
  * A collapsible resume-section entry card.
  *
- * Collapsed anatomy: [drag handle] [entry summary] [metadata] [actions/chevron].
+ * Collapsed anatomy (64–72px tall): [grip] [title / subtitle · meta] [actions]
+ * [chevron]. The expanded body is plain 16px-spaced fields — never nested
+ * cards or bordered sub-boxes.
  */
 function EditorCard({
   title,
@@ -56,6 +58,8 @@ function EditorCard({
     [onOpenChange],
   );
 
+  const metadata = [subtitle, meta].filter(Boolean).join(" · ");
+
   return (
     <CollapsiblePrimitive.Root
       data-slot="editor-card"
@@ -64,19 +68,19 @@ function EditorCard({
       onOpenChange={handleOpenChange}
       disabled={disabled}
       className={cn(
-        "rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs transition-colors duration-150 sm:p-5 dark:border-slate-800 dark:bg-slate-900",
+        "rounded-lg border border-slate-200 bg-white p-4 transition-colors duration-150 dark:border-slate-800 dark:bg-slate-900",
         disabled && "opacity-60",
         className,
       )}
     >
-      <div data-slot="editor-card-row" className="flex items-start gap-4">
+      <div data-slot="editor-card-row" className="flex items-center gap-2">
         {dragHandle ? (
           <div
             data-slot="editor-card-drag-handle"
             onClick={stopAll}
             onPointerDown={stopAll}
             onKeyDown={stopAll}
-            className="mt-0.5 inline-flex size-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-slate-300 transition-colors duration-150 hover:text-slate-500 active:cursor-grabbing dark:text-slate-600 dark:hover:text-slate-400"
+            className="inline-flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-slate-400 transition-colors duration-150 hover:text-slate-600 active:cursor-grabbing dark:text-slate-600 dark:hover:text-slate-400"
           >
             {dragHandle}
           </div>
@@ -84,33 +88,22 @@ function EditorCard({
 
         <CollapsiblePrimitive.Trigger
           data-slot="editor-card-trigger"
-          className="group/editor-card-trigger focus-visible:ring-ring/50 flex min-h-10 flex-1 items-start gap-4 rounded-lg text-left transition-colors duration-150 outline-none focus-visible:ring-3 disabled:pointer-events-none"
+          className="group/editor-card-trigger focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-2 rounded-md text-left transition-colors duration-150 outline-none focus-visible:ring-3 disabled:pointer-events-none"
         >
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+            <span className="block truncate text-sm font-semibold tracking-[-0.01em] text-slate-900 dark:text-slate-100">
               {title}
             </span>
-            {subtitle ? (
-              <span className="mt-0.5 block truncate text-sm text-slate-600 dark:text-slate-400">
-                {subtitle}
-              </span>
-            ) : null}
-            {meta ? (
-              <span className="mt-1 block text-xs text-slate-500 sm:hidden dark:text-slate-400">
-                {meta}
+            {metadata ? (
+              <span className="mt-0.5 block truncate text-xs leading-5 text-slate-500 dark:text-slate-400">
+                {metadata}
               </span>
             ) : null}
           </span>
 
-          {meta ? (
-            <span className="mt-1 hidden shrink-0 text-xs text-slate-500 tabular-nums sm:block dark:text-slate-400">
-              {meta}
-            </span>
-          ) : null}
-
           <ChevronDown
             aria-hidden="true"
-            className="mt-0.5 size-4 shrink-0 text-slate-400 transition-transform duration-200 group-data-[panel-open]/editor-card-trigger:rotate-180 dark:text-slate-500"
+            className="size-4 shrink-0 text-slate-400 transition-transform duration-200 group-data-[panel-open]/editor-card-trigger:rotate-180 dark:text-slate-500"
           />
         </CollapsiblePrimitive.Trigger>
 
@@ -131,7 +124,7 @@ function EditorCard({
         data-slot="editor-card-content"
         className="h-[var(--collapsible-panel-height)] overflow-hidden transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0"
       >
-        <div className="space-y-5 pt-5">{children}</div>
+        <div className="space-y-4 pt-4">{children}</div>
       </CollapsiblePrimitive.Panel>
     </CollapsiblePrimitive.Root>
   );

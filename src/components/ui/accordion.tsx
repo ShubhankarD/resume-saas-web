@@ -36,7 +36,7 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "group/accordion-trigger focus-visible:ring-ring/50 flex min-h-10 flex-1 items-center justify-between gap-4 rounded-lg py-4 text-left text-sm font-semibold tracking-tight text-slate-900 transition-colors duration-150 outline-none select-none hover:text-slate-700 focus-visible:ring-3 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-100 dark:hover:text-slate-300",
+          "group/accordion-trigger focus-visible:ring-ring/50 flex min-h-11 flex-1 items-center justify-between gap-3 rounded-md py-3 text-left text-sm font-semibold tracking-[-0.01em] text-slate-900 transition-colors duration-150 outline-none select-none hover:text-slate-700 focus-visible:ring-3 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-100 dark:hover:text-slate-300",
           className,
         )}
         {...props}
@@ -56,11 +56,11 @@ function AccordionContent({ className, children, ...props }: AccordionPrimitive.
     <AccordionPrimitive.Panel
       data-slot="accordion-content"
       className={cn(
-        "h-[var(--accordion-panel-height)] overflow-hidden text-sm leading-relaxed text-slate-600 transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 dark:text-slate-400",
+        "h-[var(--accordion-panel-height)] overflow-hidden text-sm leading-6 text-slate-600 transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 dark:text-slate-400",
       )}
       {...props}
     >
-      <div className={cn("pt-1 pb-5", className)}>{children}</div>
+      <div className={cn("pt-0.5 pb-4", className)}>{children}</div>
     </AccordionPrimitive.Panel>
   );
 }

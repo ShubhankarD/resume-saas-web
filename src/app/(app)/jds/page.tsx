@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, FileSearch, Plus } from "lucide-react";
+import { ArrowRight, FileSearch, Loader2, Plus, Search } from "lucide-react";
 import { useJds, useCreateJd, useDeleteJd } from "@/hooks/use-jds";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageToolbar } from "@/components/ui/page-toolbar";
+import { CompactTabs } from "@/components/ui/compact-tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormField } from "@/components/ui/form-field";
 import {
@@ -63,14 +65,24 @@ function formatDate(value: string) {
 function JdCardSkeleton() {
   return (
     <Card aria-hidden="true">
-      <CardContent className="space-y-4">
-        <div className="bg-muted h-5 w-2/3 animate-pulse rounded-md" />
-        <div className="bg-muted h-4 w-1/2 animate-pulse rounded-md" />
-        <div className="bg-muted h-8 w-28 animate-pulse rounded-lg" />
+      <CardContent className="space-y-3">
+        <div className="bg-muted h-4 w-2/3 animate-pulse rounded-md" />
+        <div className="bg-muted h-3 w-1/2 animate-pulse rounded-md" />
+        <div className="bg-muted h-3 w-1/3 animate-pulse rounded-md" />
+        <div className="bg-muted h-8 w-24 animate-pulse rounded-md" />
       </CardContent>
     </Card>
   );
 }
+
+type JdSort = "newest" | "oldest" | "title" | "company";
+
+const JD_SORT_LABELS: Record<JdSort, string> = {
+  newest: "Newest first",
+  oldest: "Oldest first",
+  title: "Title (A–Z)",
+  company: "Company (A–Z)",
+};
 
 export default function JdsListPage() {
   const { data: jds, isLoading, error } = useJds();
@@ -80,6 +92,34 @@ export default function JdsListPage() {
   const [mode, setMode] = useState<Mode>("text");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = useState<unknown>(null);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<JdSort>("newest");
+  const [sourceFilter, setSourceFilter] = useState("all");
+
+  // Distinct source types present in what `useJds()` already returned — the
+  // list endpoint has no filter parameters, so this is purely client-side.
+  const sourceTypes = useMemo(
+    () => Array.from(new Set((jds ?? []).map((jd) => jd.source_type))).sort(),
+    [jds],
+  );
+
+  const visibleJds = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const filtered = (jds ?? []).filter((jd) => {
+      if (sourceFilter !== "all" && jd.source_type !== sourceFilter) return false;
+      if (!needle) return true;
+      return (
+        (jd.title ?? "").toLowerCase().includes(needle) ||
+        (jd.company ?? "").toLowerCase().includes(needle)
+      );
+    });
+    return [...filtered].sort((a, b) => {
+      if (sort === "oldest") return a.created_at.localeCompare(b.created_at);
+      if (sort === "title") return (a.title ?? "").localeCompare(b.title ?? "");
+      if (sort === "company") return (a.company ?? "").localeCompare(b.company ?? "");
+      return b.created_at.localeCompare(a.created_at);
+    });
+  }, [jds, query, sort, sourceFilter]);
 
   const textForm = useForm<TextForm>({ resolver: zodResolver(textSchema) });
   const urlForm = useForm<UrlForm>({ resolver: zodResolver(urlSchema) });
@@ -101,7 +141,7 @@ export default function JdsListPage() {
   }
 
   const metaFields = (idPrefix: string, registerProps?: "text" | "url") => (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <FormField label="Title" htmlFor={`${idPrefix}-title`} hint="Optional">
         <Input
           id={`${idPrefix}-title`}
@@ -144,7 +184,7 @@ export default function JdsListPage() {
         <div
           role="group"
           aria-label="Input mode"
-          className="flex flex-wrap gap-2 rounded-xl bg-slate-100/70 p-1 dark:bg-slate-950/40"
+          className="flex flex-wrap gap-1 rounded-lg bg-slate-100/70 p-1 dark:bg-slate-950/40"
         >
           {(["text", "url", "file"] as const).map((m) => (
             <Button
@@ -173,7 +213,7 @@ export default function JdsListPage() {
               textForm.reset();
               setShowCreateForm(false);
             })}
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-4"
           >
             {metaFields("jd-text", "text")}
             <FormField
@@ -190,12 +230,15 @@ export default function JdsListPage() {
               />
             </FormField>
             <ErrorMessage error={createJd.error} />
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 pt-1">
               <Button
                 type="submit"
                 disabled={createJd.isPending}
                 data-testid="create-jd-submit-text"
               >
+                {createJd.isPending ? (
+                  <Loader2 aria-hidden="true" className="animate-spin" />
+                ) : null}
                 {createJd.isPending ? "Adding…" : "Add job description"}
               </Button>
               <SheetClose render={<Button type="button" variant="ghost" />}>Cancel</SheetClose>
@@ -215,7 +258,7 @@ export default function JdsListPage() {
               urlForm.reset();
               setShowCreateForm(false);
             })}
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-4"
           >
             {metaFields("jd-url", "url")}
             <FormField
@@ -232,12 +275,15 @@ export default function JdsListPage() {
               />
             </FormField>
             <ErrorMessage error={createJd.error} />
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 pt-1">
               <Button
                 type="submit"
                 disabled={createJd.isPending}
                 data-testid="create-jd-submit-url"
               >
+                {createJd.isPending ? (
+                  <Loader2 aria-hidden="true" className="animate-spin" />
+                ) : null}
                 {createJd.isPending ? "Fetching…" : "Fetch and add"}
               </Button>
               <SheetClose render={<Button type="button" variant="ghost" />}>Cancel</SheetClose>
@@ -246,7 +292,7 @@ export default function JdsListPage() {
         )}
 
         {mode === "file" && (
-          <form onSubmit={handleFileSubmit} className="flex flex-col gap-6">
+          <form onSubmit={handleFileSubmit} className="flex flex-col gap-4">
             {metaFields("jd-file")}
             <FormField
               label="File"
@@ -259,17 +305,20 @@ export default function JdsListPage() {
                 id="jd-file-input"
                 type="file"
                 data-testid="jd-file-input"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-slate-800 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:file:bg-slate-50 dark:file:text-slate-900"
+                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-slate-800 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:file:bg-slate-50 dark:file:text-slate-900"
               />
             </FormField>
             <ErrorMessage error={fileError} />
             <ErrorMessage error={createJd.error} />
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 pt-1">
               <Button
                 type="submit"
                 disabled={createJd.isPending}
                 data-testid="create-jd-submit-file"
               >
+                {createJd.isPending ? (
+                  <Loader2 aria-hidden="true" className="animate-spin" />
+                ) : null}
                 {createJd.isPending ? "Uploading…" : "Upload and add"}
               </Button>
               <SheetClose render={<Button type="button" variant="ghost" />}>Cancel</SheetClose>
@@ -280,19 +329,83 @@ export default function JdsListPage() {
     </Sheet>
   );
 
+  const hasJds = (jds?.length ?? 0) > 0;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Targets"
         title="Job descriptions"
-        description="Save the roles you're applying for, then score any profile against them to see what's covered and what's missing."
+        description="Save the roles you're applying for, then score any profile against them."
         action={createSheet}
       />
 
       <ErrorMessage error={error} />
 
+      {hasJds ? (
+        <PageToolbar
+          className="rounded-lg border px-3 py-2 md:px-4"
+          left={
+            <>
+              <div className="relative w-full sm:w-72">
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
+                />
+                <Input
+                  type="search"
+                  aria-label="Search job descriptions"
+                  placeholder="Search title or company…"
+                  className="pl-9"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              {sourceTypes.length > 1 ? (
+                <CompactTabs
+                  aria-label="Filter by source"
+                  value={sourceFilter}
+                  onValueChange={setSourceFilter}
+                  items={[
+                    { value: "all", label: "All", badge: jds?.length },
+                    ...sourceTypes.map((type) => ({
+                      value: type,
+                      label: type,
+                      badge: jds?.filter((jd) => jd.source_type === type).length,
+                    })),
+                  ]}
+                />
+              ) : null}
+            </>
+          }
+          right={
+            <>
+              <label htmlFor="jds-sort" className="sr-only">
+                Sort job descriptions
+              </label>
+              <select
+                id="jds-sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as JdSort)}
+                className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700 dark:focus:border-slate-600 dark:focus:ring-white/10"
+              >
+                {(Object.keys(JD_SORT_LABELS) as JdSort[]).map((key) => (
+                  <option key={key} value={key}>
+                    {JD_SORT_LABELS[key]}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-slate-500 tabular-nums dark:text-slate-400">
+                {visibleJds.length} of {jds?.length ?? 0}
+              </span>
+            </>
+          }
+        />
+      ) : null}
+
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <JdCardSkeleton />
           <JdCardSkeleton />
           <JdCardSkeleton />
           <JdCardSkeleton />
@@ -309,24 +422,42 @@ export default function JdsListPage() {
             </Button>
           }
         />
+      ) : visibleJds.length === 0 ? (
+        <EmptyState
+          icon={Search}
+          title="No job descriptions match those filters"
+          description="Try a different search term or switch back to all sources."
+          action={
+            <Button
+              variant="outline"
+              onClick={() => {
+                setQuery("");
+                setSourceFilter("all");
+              }}
+            >
+              Clear filters
+            </Button>
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {jds?.map((jd) => (
-            <Card key={jd.id} data-testid={`jd-card-${jd.id}`} className="h-full">
-              <CardContent className="flex h-full flex-col gap-5">
-                <div className="min-w-0 space-y-2">
-                  <h2 className="font-heading text-base font-semibold tracking-tight text-slate-900 sm:text-lg dark:text-slate-100">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {visibleJds.map((jd) => (
+            <Card key={jd.id} data-testid={`jd-card-${jd.id}`} interactive className="h-full">
+              <CardContent className="flex h-full flex-col gap-3">
+                <div className="min-w-0 space-y-1">
+                  <h2 className="truncate text-sm font-semibold tracking-[-0.01em] text-slate-900 dark:text-slate-100">
                     {jd.title ?? "Untitled"}
                   </h2>
-                  <p className="truncate text-sm text-slate-600 dark:text-slate-400">
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                     {jd.company ?? "Company not set"}
                   </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{jd.source_type}</Badge>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      Added {formatDate(jd.created_at)}
-                    </span>
-                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{jd.source_type}</Badge>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    Added {formatDate(jd.created_at)}
+                  </span>
                 </div>
 
                 <div className="mt-auto flex items-center justify-between gap-2">
@@ -344,6 +475,8 @@ export default function JdsListPage() {
           ))}
         </div>
       )}
+
+      <ErrorMessage error={deleteJd.error} />
     </div>
   );
 }

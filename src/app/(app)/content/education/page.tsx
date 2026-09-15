@@ -64,28 +64,28 @@ export default function EducationPage() {
 
   if (isLoading)
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {header()}
-        <ContentSkeleton rows={2} />
+        <ContentSkeleton rows={3} />
       </div>
     );
   if (error)
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {header()}
         <ErrorMessage error={error} />
       </div>
     );
   if (!content)
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {header()}
         <NoContentRecord section="your education" />
       </div>
     );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {header(
         <Sheet open={addOpen} onOpenChange={setAddOpen}>
           <SheetTrigger
@@ -106,7 +106,7 @@ export default function EducationPage() {
                 reset();
                 setAddOpen(false);
               })}
-              className="space-y-5"
+              className="space-y-4"
             >
               <FormField
                 label="Entry id"
@@ -151,7 +151,7 @@ export default function EducationPage() {
         <EmptyState
           icon={GraduationCap}
           title="No education added yet"
-          description="Add degrees, bootcamps, or certifications — anything you want available to put on a resume."
+          description="Add a degree, bootcamp, or certification to make it available to a resume."
           action={
             <Button variant="cta" onClick={() => setAddOpen(true)}>
               <Plus aria-hidden="true" className="size-4" />
@@ -160,7 +160,7 @@ export default function EducationPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {content.education.map((entry) => (
             <EducationRow
               key={entry.id}
@@ -210,7 +210,7 @@ function EducationRow({
             setSaveError(err);
           }
         })}
-        className="space-y-5"
+        className="space-y-4"
       >
         <FormField label="Entry" htmlFor={fieldId} error={errors.text?.message} required>
           <Textarea
@@ -222,9 +222,11 @@ function EducationRow({
 
         <ErrorMessage error={saveError} />
 
-        <Button type="submit" disabled={isSubmitting || !isDirty}>
-          {isSubmitting ? "Saving…" : "Save entry"}
-        </Button>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isSubmitting || !isDirty}>
+            {isSubmitting ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
       </form>
     </EditorCard>
   );

@@ -19,11 +19,11 @@ export function ContentSkeleton({ rows = 3, className }: { rows?: number; classN
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 dark:border-slate-800 dark:bg-slate-900"
+          className="flex min-h-16 flex-col justify-center rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
         >
-          <div className="animate-pulse space-y-3">
-            <div className="h-4 w-1/3 rounded-full bg-slate-200 dark:bg-slate-800" />
-            <div className="h-3 w-1/2 rounded-full bg-slate-100 dark:bg-slate-800/70" />
+          <div className="animate-pulse space-y-2">
+            <div className="h-3.5 w-1/3 rounded-md bg-slate-200 dark:bg-slate-800" />
+            <div className="h-3 w-1/2 rounded-md bg-slate-100 dark:bg-slate-800/70" />
           </div>
         </div>
       ))}

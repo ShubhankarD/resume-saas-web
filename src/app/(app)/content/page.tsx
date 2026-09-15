@@ -6,14 +6,22 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, FileUp, GraduationCap, ListChecks, Repeat2, Wrench } from "lucide-react";
+import {
+  Briefcase,
+  ChevronRight,
+  FileUp,
+  ListChecks,
+  Plus,
+  Repeat2,
+  type LucideIcon,
+} from "lucide-react";
 import { useContent, contentQueryKey } from "@/hooks/use-content";
 import { putContent } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
-import { PageHeader, SectionHeader } from "@/components/ui/page-header";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageHeader } from "@/components/ui/page-header";
 import { ErrorMessage } from "@/components/content/error-message";
 import { ContentSkeleton } from "@/components/content/content-states";
 
@@ -21,6 +29,14 @@ const scratchSchema = z.object({
   name: z.string().min(1, "Name is required").max(200),
 });
 type ScratchForm = z.infer<typeof scratchSchema>;
+
+/** The four sections a resume can actually draw from. "Completeness" here is
+ * deliberately literal — how many of them hold at least one entry — so the
+ * number never implies a quality judgement the app cannot make. */
+const TRACKED_SECTIONS = 4;
+
+/** How many rows each overview section previews before linking to its editor. */
+const PREVIEW_ROWS = 3;
 
 export default function ContentOverviewPage() {
   const { data: content, isLoading, error } = useContent();
@@ -53,17 +69,17 @@ export default function ContentOverviewPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <PageHeader eyebrow="Content library" title="Your resume content" />
-        <ContentSkeleton rows={2} />
+      <div className="space-y-6">
+        <PageHeader eyebrow="Content library" title="Content library" />
+        <ContentSkeleton rows={3} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-8">
-        <PageHeader eyebrow="Content library" title="Your resume content" />
+      <div className="space-y-6">
+        <PageHeader eyebrow="Content library" title="Content library" />
         <ErrorMessage error={error} />
       </div>
     );
@@ -71,80 +87,89 @@ export default function ContentOverviewPage() {
 
   if (!content) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         <PageHeader
           eyebrow="Content library"
-          title="Let's build your resume content"
-          description="Your content library is the single source of truth every tailored resume is generated from. Pick a starting point — you can change everything later."
+          title="Content library"
+          description="Your library is the single source of truth every tailored resume is generated from. Pick a starting point — nothing here is permanent."
         />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StartOption
-            href="/content/intake"
-            icon={FileUp}
-            title="Upload a resume"
-            description="We extract a draft from a PDF or DOCX for you to review."
-          />
-          <StartOption
-            href="/content/import"
-            icon={Repeat2}
-            title="Import content.yaml"
-            description="Already have a structured file? Bring it straight in."
-          />
-          <button
-            type="button"
-            onClick={() => setShowScratchForm((v) => !v)}
-            aria-expanded={showScratchForm}
-            data-testid="start-from-scratch"
-            className="focus-visible:ring-ring/50 rounded-2xl border border-slate-200/80 bg-white p-6 text-left transition-colors duration-150 outline-none hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-3 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/60"
-          >
-            <span className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
-              <ListChecks aria-hidden="true" className="size-5" />
-            </span>
-            <span className="block text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-              Start from scratch
-            </span>
-            <span className="mt-1.5 block text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-              Create an empty record and add roles as you go.
-            </span>
-          </button>
-        </div>
+        <section className="space-y-3">
+          <SectionOverline label="Start your library" />
+          <div className="space-y-2">
+            <StartOptionRow
+              href="/content/intake"
+              icon={FileUp}
+              title="Upload a resume"
+              description="We extract a draft from a PDF or DOCX for you to review."
+            />
+            <StartOptionRow
+              href="/content/import"
+              icon={Repeat2}
+              title="Import content.yaml"
+              description="Already have a structured file? Bring it straight in."
+            />
+            <button
+              type="button"
+              onClick={() => setShowScratchForm((v) => !v)}
+              aria-expanded={showScratchForm}
+              data-testid="start-from-scratch"
+              className="focus-visible:ring-ring/50 flex w-full min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left transition-colors duration-150 outline-none hover:border-slate-300 focus-visible:ring-3 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+            >
+              <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                <ListChecks aria-hidden="true" className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Start from scratch
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">
+                  Create an empty record and add roles as you go.
+                </span>
+              </span>
+              <ChevronRight
+                aria-hidden="true"
+                className="size-4 shrink-0 text-slate-400 dark:text-slate-500"
+              />
+            </button>
+          </div>
+        </section>
 
         {showScratchForm && (
-          <Card className="p-6 sm:p-8">
-            <form
-              onSubmit={handleSubmit((values) => scratchMutation.mutate(values.name))}
-              className="space-y-5"
+          <form
+            onSubmit={handleSubmit((values) => scratchMutation.mutate(values.name))}
+            className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900"
+          >
+            <div>
+              <SectionOverline label="Start from scratch" />
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                We only need your name to create the record.
+              </p>
+            </div>
+            <FormField
+              label="Your name"
+              htmlFor={nameFieldId}
+              error={errors.name?.message}
+              required
+              className="max-w-md"
             >
-              <SectionHeader
-                title="Start from scratch"
-                description="We only need your name to create the record."
+              <Input
+                id={nameFieldId}
+                placeholder="Jane Doe"
+                aria-invalid={errors.name ? true : undefined}
+                {...register("name")}
               />
-              <FormField
-                label="Your name"
-                htmlFor={nameFieldId}
-                error={errors.name?.message}
-                required
-                className="max-w-md"
-              >
-                <Input
-                  id={nameFieldId}
-                  placeholder="Jane Doe"
-                  aria-invalid={errors.name ? true : undefined}
-                  {...register("name")}
-                />
-              </FormField>
-              <ErrorMessage error={scratchMutation.error} />
-              <Button
-                type="submit"
-                variant="cta"
-                disabled={scratchMutation.isPending}
-                data-testid="create-empty-content"
-              >
-                {scratchMutation.isPending ? "Creating…" : "Create empty content record"}
-              </Button>
-            </form>
-          </Card>
+            </FormField>
+            <ErrorMessage error={scratchMutation.error} />
+            <Button
+              type="submit"
+              variant="cta"
+              disabled={scratchMutation.isPending}
+              data-testid="create-empty-content"
+            >
+              {scratchMutation.isPending ? "Creating…" : "Create empty content record"}
+            </Button>
+          </form>
         )}
       </div>
     );
@@ -155,20 +180,34 @@ export default function ContentOverviewPage() {
     (sum, role) => sum + role.groups.reduce((s, g) => s + g.bullets.length, 0),
     0,
   );
+  const skillEntries = Object.entries(content.skills);
+  const taglineEntries = Object.entries(content.taglines);
+  const educationEntries = content.education;
+
+  const sectionsWithContent = [
+    roleCount,
+    educationEntries.length,
+    skillEntries.length,
+    taglineEntries.length,
+  ].filter((n) => n > 0).length;
+  const completeness = Math.round((sectionsWithContent / TRACKED_SECTIONS) * 100);
+  const totalEntries =
+    roleCount + bulletCount + skillEntries.length + taglineEntries.length + educationEntries.length;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Content library"
-        title="Your resume content"
-        description="Everything your tailored resumes are built from, in one place."
+        title="Content library"
+        description="Manage the reusable content every tailored resume is built from."
         action={
           <Button nativeButton={false} variant="cta" render={<Link href="/content/experience" />}>
-            Edit experience
+            <Plus aria-hidden="true" className="size-4" />
+            Add role
           </Button>
         }
       >
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Resume name:{" "}
           <span
             data-testid="content-name"
@@ -179,83 +218,221 @@ export default function ContentOverviewPage() {
         </p>
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <SummaryStat label="Roles" value={roleCount} href="/content/experience" icon={Briefcase} />
-        <SummaryStat
-          label="Bullets"
-          value={bulletCount}
-          href="/content/experience"
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <MetricCard
+          label="Section coverage"
+          value={`${completeness}%`}
+          progress={completeness}
+          hint={`${sectionsWithContent} of ${TRACKED_SECTIONS} sections have content`}
           icon={ListChecks}
         />
-        <SummaryStat
-          label="Skill groups"
-          value={Object.keys(content.skills).length}
-          href="/content/skills"
-          icon={Wrench}
-        />
-        <SummaryStat
-          label="Education"
-          value={content.education.length}
-          href="/content/education"
-          icon={GraduationCap}
+        <MetricCard
+          label="Content entries"
+          value={totalEntries}
+          hint={`${roleCount} roles · ${bulletCount} bullets · ${skillEntries.length} skill groups`}
+          icon={Briefcase}
         />
       </div>
+
+      <OverviewSection
+        label="Experience"
+        href="/content/experience"
+        addLabel="Add role"
+        total={roleCount}
+        emptyLabel="Add your first role"
+      >
+        {content.experience.slice(0, PREVIEW_ROWS).map((role) => (
+          <OverviewRow
+            key={role.id}
+            href="/content/experience"
+            title={role.title || "Untitled role"}
+            meta={[role.org, role.dates].filter(Boolean).join(" · ")}
+          />
+        ))}
+      </OverviewSection>
+
+      <OverviewSection
+        label="Education"
+        href="/content/education"
+        addLabel="Add entry"
+        total={educationEntries.length}
+        emptyLabel="Add a degree or certification"
+      >
+        {educationEntries.slice(0, PREVIEW_ROWS).map((entry) => (
+          <OverviewRow
+            key={entry.id}
+            href="/content/education"
+            title={entry.text}
+            meta={entry.id}
+          />
+        ))}
+      </OverviewSection>
+
+      <OverviewSection
+        label="Skills"
+        href="/content/skills"
+        addLabel="Add group"
+        total={skillEntries.length}
+        emptyLabel="Add your first skill group"
+      >
+        {skillEntries.slice(0, PREVIEW_ROWS).map(([key, group]) => (
+          <OverviewRow key={key} href="/content/skills" title={group.label} meta={group.text} />
+        ))}
+      </OverviewSection>
+
+      <OverviewSection
+        label="Taglines"
+        href="/content/taglines"
+        addLabel="Add tagline"
+        total={taglineEntries.length}
+        emptyLabel="Add your first tagline"
+      >
+        {taglineEntries.slice(0, PREVIEW_ROWS).map(([key, text]) => (
+          <OverviewRow key={key} href="/content/taglines" title={text} meta={key} />
+        ))}
+      </OverviewSection>
+
+      <section className="space-y-3">
+        <SectionOverline label="Move content" />
+        <div className="space-y-2">
+          <StartOptionRow
+            href="/content/intake"
+            icon={FileUp}
+            title="Upload a resume"
+            description="Extract a draft from a PDF or DOCX and review it before saving."
+          />
+          <StartOptionRow
+            href="/content/import"
+            icon={Repeat2}
+            title="Import & export content.yaml"
+            description="Back up your library, or restore it from a structured file."
+          />
+        </div>
+      </section>
     </div>
   );
 }
 
-function StartOption({
+function SectionOverline({ label }: { label: string }) {
+  return (
+    <h2 className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+      {label}
+    </h2>
+  );
+}
+
+function OverviewSection({
+  label,
+  href,
+  addLabel,
+  total,
+  emptyLabel,
+  children,
+}: {
+  label: string;
+  href: string;
+  addLabel: string;
+  total: number;
+  emptyLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <SectionOverline label={label} />
+        <Button
+          nativeButton={false}
+          variant="ghost"
+          size="sm"
+          render={<Link href={href} />}
+          aria-label={`${addLabel} — ${label}`}
+        >
+          <Plus aria-hidden="true" className="size-3.5" />
+          {addLabel}
+        </Button>
+      </div>
+
+      {total === 0 ? (
+        <Link
+          href={href}
+          className="focus-visible:ring-ring/50 flex min-h-16 items-center gap-2 rounded-lg border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-500 transition-colors duration-150 outline-none hover:border-slate-300 hover:text-slate-900 focus-visible:ring-3 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-100"
+        >
+          <Plus aria-hidden="true" className="size-4 shrink-0" />
+          {emptyLabel}
+        </Link>
+      ) : (
+        <div className="space-y-2">
+          {children}
+          {total > PREVIEW_ROWS && (
+            <Link
+              href={href}
+              className="focus-visible:ring-ring/50 inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium text-slate-600 transition-colors duration-150 outline-none hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:text-slate-100"
+            >
+              View all {total}
+              <ChevronRight aria-hidden="true" className="size-3.5" />
+            </Link>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function OverviewRow({ href, title, meta }: { href: string; title: string; meta?: string }) {
+  return (
+    <Link
+      href={href}
+      className="focus-visible:ring-ring/50 flex min-h-16 min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 transition-colors duration-150 outline-none hover:border-slate-300 focus-visible:ring-3 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+          {title}
+        </span>
+        {meta ? (
+          <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">
+            {meta}
+          </span>
+        ) : null}
+      </span>
+      <ChevronRight
+        aria-hidden="true"
+        className="size-4 shrink-0 text-slate-400 dark:text-slate-500"
+      />
+    </Link>
+  );
+}
+
+function StartOptionRow({
   href,
   icon: Icon,
   title,
   description,
 }: {
   href: string;
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: LucideIcon;
   title: string;
   description: string;
 }) {
   return (
     <Link
       href={href}
-      className="focus-visible:ring-ring/50 rounded-2xl border border-slate-200/80 bg-white p-6 transition-colors duration-150 outline-none hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-3 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/60"
+      className="focus-visible:ring-ring/50 flex min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 transition-colors duration-150 outline-none hover:border-slate-300 focus-visible:ring-3 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
     >
-      <span className="mb-4 inline-flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-        <Icon aria-hidden className="size-5" />
+      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+        <Icon aria-hidden="true" className="size-4" />
       </span>
-      <span className="block text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-        {title}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+          {title}
+        </span>
+        <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">
+          {description}
+        </span>
       </span>
-      <span className="mt-1.5 block text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-        {description}
-      </span>
-    </Link>
-  );
-}
-
-function SummaryStat({
-  label,
-  value,
-  href,
-  icon: Icon,
-}: {
-  label: string;
-  value: number;
-  href: string;
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
-}) {
-  return (
-    <Link
-      href={href}
-      className="focus-visible:ring-ring/50 rounded-2xl border border-slate-200/80 bg-white p-5 transition-colors duration-150 outline-none hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-3 sm:p-6 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/60"
-    >
-      <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-        <Icon aria-hidden className="size-3.5" />
-        {label}
-      </span>
-      <span className="mt-2 block text-3xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-slate-50">
-        {value}
-      </span>
+      <ChevronRight
+        aria-hidden="true"
+        className="size-4 shrink-0 text-slate-400 dark:text-slate-500"
+      />
     </Link>
   );
 }

@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { EditorCard } from "@/components/ui/editor-card";
 import { Accordion } from "@/components/ui/accordion";
 import { FormField } from "@/components/ui/form-field";
-import { SectionHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
 import { ErrorMessage } from "@/components/content/error-message";
@@ -64,6 +63,7 @@ export function RoleEditor({
   const fieldId = useId();
   const [groupCreateError, setGroupCreateError] = useState<unknown>(null);
   const [roleUpdateError, setRoleUpdateError] = useState<unknown>(null);
+  const [addingGroup, setAddingGroup] = useState(false);
 
   const {
     register: registerRole,
@@ -93,7 +93,7 @@ export function RoleEditor({
       meta={role.dates || undefined}
       actions={<ConfirmDeleteButton label={`role ${role.title}`} onConfirm={onDeleteRole} />}
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
         <form
           onSubmit={handleRoleSubmit(async (values) => {
             setRoleUpdateError(null);
@@ -103,9 +103,9 @@ export function RoleEditor({
               setRoleUpdateError(err);
             }
           })}
-          className="space-y-5"
+          className="space-y-4"
         >
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField
               label="Title"
               htmlFor={`${fieldId}-title`}
@@ -152,22 +152,49 @@ export function RoleEditor({
 
           <ErrorMessage error={roleUpdateError} />
 
-          <Button type="submit" disabled={roleSubmitting || !roleDirty}>
-            {roleSubmitting ? "Saving…" : "Save role details"}
-          </Button>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={roleSubmitting || !roleDirty}>
+              {roleSubmitting ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
         </form>
 
-        <div className="space-y-4 border-t border-slate-200/80 pt-6 dark:border-slate-800">
-          <SectionHeader
-            title="Bullet groups"
-            description={`${role.groups.length} ${role.groups.length === 1 ? "group" : "groups"} · ${bulletCount} ${bulletCount === 1 ? "bullet" : "bullets"}`}
-          />
+        <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                Bullet groups
+              </h3>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {role.groups.length} {role.groups.length === 1 ? "group" : "groups"} · {bulletCount}{" "}
+                {bulletCount === 1 ? "bullet" : "bullets"}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-expanded={addingGroup}
+              onClick={() => setAddingGroup((v) => !v)}
+            >
+              <Plus aria-hidden="true" className="size-3.5" />
+              Add group
+            </Button>
+          </div>
 
           {role.groups.length === 0 ? (
-            <EmptyState
-              title="No bullet groups yet"
-              description="Groups keep related accomplishments together — add one below to start writing bullets for this role."
-            />
+            addingGroup ? null : (
+              <EmptyState
+                title="No bullet groups yet"
+                description="Groups keep related accomplishments together — add one to start writing bullets."
+                action={
+                  <Button type="button" size="sm" onClick={() => setAddingGroup(true)}>
+                    <Plus aria-hidden="true" className="size-3.5" />
+                    Add group
+                  </Button>
+                }
+              />
+            )
           ) : (
             <Accordion>
               {role.groups.map((group) => (
@@ -184,57 +211,69 @@ export function RoleEditor({
             </Accordion>
           )}
 
-          <form
-            onSubmit={handleGroupSubmit(async (values) => {
-              setGroupCreateError(null);
-              try {
-                await onCreateGroup({
-                  id: values.id,
-                  heading: values.heading.trim() ? values.heading.trim() : undefined,
-                });
-                resetGroupForm();
-              } catch (err) {
-                setGroupCreateError(err);
-              }
-            })}
-            className="space-y-5 rounded-xl border border-dashed border-slate-200 p-4 sm:p-5 dark:border-slate-800"
-          >
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <FormField
-                label="Group id"
-                htmlFor={`${fieldId}-group-id`}
-                error={groupErrors.id?.message}
-                required
-                hint="Lowercase letters, numbers, - or _"
-              >
-                <Input
-                  id={`${fieldId}-group-id`}
-                  placeholder="group-id"
-                  aria-invalid={groupErrors.id ? true : undefined}
-                  {...registerGroup("id")}
-                />
-              </FormField>
+          {addingGroup && (
+            <form
+              onSubmit={handleGroupSubmit(async (values) => {
+                setGroupCreateError(null);
+                try {
+                  await onCreateGroup({
+                    id: values.id,
+                    heading: values.heading.trim() ? values.heading.trim() : undefined,
+                  });
+                  resetGroupForm();
+                  setAddingGroup(false);
+                } catch (err) {
+                  setGroupCreateError(err);
+                }
+              })}
+              className="space-y-4 border-t border-slate-200 pt-4 dark:border-slate-800"
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  label="Group id"
+                  htmlFor={`${fieldId}-group-id`}
+                  error={groupErrors.id?.message}
+                  required
+                  hint="Lowercase letters, numbers, - or _"
+                >
+                  <Input
+                    id={`${fieldId}-group-id`}
+                    placeholder="group-id"
+                    aria-invalid={groupErrors.id ? true : undefined}
+                    {...registerGroup("id")}
+                  />
+                </FormField>
 
-              <FormField
-                label="Group heading"
-                htmlFor={`${fieldId}-group-heading`}
-                hint="Optional."
-              >
-                <Input
-                  id={`${fieldId}-group-heading`}
-                  placeholder="e.g. Platform modernisation"
-                  {...registerGroup("heading")}
-                />
-              </FormField>
-            </div>
+                <FormField
+                  label="Group heading"
+                  htmlFor={`${fieldId}-group-heading`}
+                  hint="Optional."
+                >
+                  <Input
+                    id={`${fieldId}-group-heading`}
+                    placeholder="e.g. Platform modernisation"
+                    {...registerGroup("heading")}
+                  />
+                </FormField>
+              </div>
 
-            <ErrorMessage error={groupCreateError} />
+              <ErrorMessage error={groupCreateError} />
 
-            <Button type="submit" variant="outline" disabled={groupSubmitting}>
-              <Plus aria-hidden="true" className="size-4" />
-              {groupSubmitting ? "Adding…" : "Add group"}
-            </Button>
-          </form>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAddingGroup(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={groupSubmitting}>
+                  {groupSubmitting ? "Adding…" : "Add group"}
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </EditorCard>

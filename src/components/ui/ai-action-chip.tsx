@@ -41,14 +41,14 @@ function AiActionChip({
       disabled={disabled || pending}
       aria-busy={pending ? true : undefined}
       className={cn(
-        "inline-flex min-h-9 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 transition-colors duration-150 outline-none hover:bg-amber-100 focus-visible:ring-3 focus-visible:ring-amber-500/30 disabled:pointer-events-none disabled:opacity-60 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50",
+        "inline-flex h-8 items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50/70 px-3 text-xs font-medium text-amber-800 transition-colors duration-150 outline-none hover:bg-amber-100 focus-visible:ring-3 focus-visible:ring-amber-500/30 disabled:pointer-events-none disabled:opacity-60 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50",
         className,
       )}
     >
       {pending ? (
-        <Loader2 aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
+        <Loader2 aria-hidden="true" className="size-3 shrink-0 animate-spin" />
       ) : (
-        <Sparkles aria-hidden="true" className="size-3.5 shrink-0" />
+        <Sparkles aria-hidden="true" className="size-3 shrink-0" />
       )}
       {label}
     </button>
