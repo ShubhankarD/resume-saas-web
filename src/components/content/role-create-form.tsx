@@ -1,11 +1,12 @@
 "use client";
 
+import { useId } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { ErrorMessage } from "@/components/content/error-message";
 import type { RoleCreate } from "@/lib/api/content";
 
@@ -32,6 +33,7 @@ export function RoleCreateForm({
   onSubmit: (body: RoleCreate) => Promise<unknown>;
   error?: unknown;
 }) {
+  const fieldId = useId();
   const schema = makeRoleSchema(existingIds);
   const {
     register,
@@ -46,44 +48,73 @@ export function RoleCreateForm({
         await onSubmit(values);
         reset();
       })}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+      className="space-y-5"
     >
-      <Field label="Id" error={errors.id?.message}>
-        <Input placeholder="acme-2022" {...register("id")} />
-      </Field>
-      <Field label="Title" error={errors.title?.message}>
-        <Input placeholder="Senior Engineer" {...register("title")} />
-      </Field>
-      <Field label="Organization" error={errors.org?.message}>
-        <Input placeholder="Acme Corp" {...register("org")} />
-      </Field>
-      <Field label="Dates" error={errors.dates?.message}>
-        <Input placeholder="2020--Present" {...register("dates")} />
-      </Field>
-      <div className="sm:col-span-2">
-        <ErrorMessage error={error} />
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <FormField
+          label="Title"
+          htmlFor={`${fieldId}-title`}
+          error={errors.title?.message}
+          required
+        >
+          <Input
+            id={`${fieldId}-title`}
+            placeholder="Senior Consultant"
+            aria-invalid={errors.title ? true : undefined}
+            {...register("title")}
+          />
+        </FormField>
+
+        <FormField
+          label="Organization"
+          htmlFor={`${fieldId}-org`}
+          error={errors.org?.message}
+          required
+        >
+          <Input
+            id={`${fieldId}-org`}
+            placeholder="Acme Corp"
+            aria-invalid={errors.org ? true : undefined}
+            {...register("org")}
+          />
+        </FormField>
+
+        <FormField
+          label="Dates"
+          htmlFor={`${fieldId}-dates`}
+          error={errors.dates?.message}
+          required
+          hint="Free text, e.g. “Jan 2024 – Present”."
+        >
+          <Input
+            id={`${fieldId}-dates`}
+            placeholder="2020--Present"
+            aria-invalid={errors.dates ? true : undefined}
+            {...register("dates")}
+          />
+        </FormField>
+
+        <FormField
+          label="Role id"
+          htmlFor={`${fieldId}-id`}
+          error={errors.id?.message}
+          required
+          hint="A short unique slug, e.g. “acme-2022”."
+        >
+          <Input
+            id={`${fieldId}-id`}
+            placeholder="acme-2022"
+            aria-invalid={errors.id ? true : undefined}
+            {...register("id")}
+          />
+        </FormField>
       </div>
-      <Button type="submit" disabled={isSubmitting} className="self-start sm:col-span-2">
+
+      <ErrorMessage error={error} />
+
+      <Button type="submit" variant="cta" disabled={isSubmitting} className="w-full sm:w-auto">
         {isSubmitting ? "Adding…" : "Add role"}
       </Button>
     </form>
-  );
-}
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label>{label}</Label>
-      {children}
-      {error && <p className="text-destructive text-xs">{error}</p>}
-    </div>
   );
 }

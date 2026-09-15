@@ -8,7 +8,15 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       type={type}
       data-slot="input"
       className={cn(
-        "border-input file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/20 disabled:bg-input/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 h-11 w-full min-w-0 rounded-lg border bg-transparent px-4 py-2.5 text-sm transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3 md:text-sm",
+        "h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2 text-sm text-slate-900 transition-all duration-150 outline-none",
+        "file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-slate-900 placeholder:text-slate-400",
+        "focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10",
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-60",
+        "aria-invalid:border-destructive aria-invalid:ring-destructive/15 aria-invalid:ring-4",
+        "dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-100 dark:file:text-slate-100 dark:placeholder:text-slate-500",
+        "dark:focus:border-amber-500 dark:focus:bg-slate-900 dark:disabled:bg-slate-900/80",
+        "dark:aria-invalid:border-destructive/60 dark:aria-invalid:ring-destructive/30",
+        "md:text-sm",
         className,
       )}
       {...props}

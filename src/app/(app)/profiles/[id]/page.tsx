@@ -2,21 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { FileDown, History } from "lucide-react";
 import { useContent } from "@/hooks/use-content";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profiles";
 import { previewProfile } from "@/lib/api/profiles";
 import type { ProfileWrite } from "@/lib/api/profiles";
 import { ErrorMessage } from "@/components/content/error-message";
 import { Button } from "@/components/ui/button";
+import { PageHeader, SectionHeader } from "@/components/ui/page-header";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { ProfileBasics } from "@/components/profiles/profile-basics";
 import { TemplateGallery } from "@/components/profiles/template-gallery";
 import { ExperienceEditor } from "@/components/profiles/experience-editor";
 import { SkillsEditor } from "@/components/profiles/skills-editor";
 import { EducationEditor } from "@/components/profiles/education-editor";
 import { LivePreview } from "@/components/profiles/live-preview";
-import { BuildPanel } from "@/components/profiles/build-panel";
+import { BuildHistory, LatestPdfLink, useResumeExport } from "@/components/profiles/build-panel";
 
 const AUTOSAVE_DEBOUNCE_MS = 400;
 
@@ -68,6 +75,8 @@ export default function ProfileEditorPage() {
   // Debounced autosave-then-preview: fires ~400ms after the last edit to
   // any field (typing, checkbox toggles, drag reorders, template switches
   // all funnel through setDraft), per the issue's split-screen spec.
+  // Presentation-only state (preview zoom) deliberately lives outside
+  // `draft` so it can never re-trigger this effect.
   const skipNextDebounce = useRef(true);
   useEffect(() => {
     if (!draft) return;
@@ -96,41 +105,122 @@ export default function ProfileEditorPage() {
     await updateProfile.mutateAsync(draft);
   }
 
+  // The single export implementation for this editor — the preview
+  // toolbar's CTA drives it.
+  const exportPdf = useResumeExport({ profileId, ensureSaved });
+
   if (profileLoading || contentLoading) {
-    return <p className="text-muted-foreground text-sm">Loading profile…</p>;
+    return <EditorSkeleton />;
   }
   if (profileError) return <ErrorMessage error={profileError} />;
   if (contentError) return <ErrorMessage error={contentError} />;
   if (!draft || !content) return null;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon-sm" nativeButton={false} render={<Link href="/profiles" />}>
-          <ArrowLeft />
-        </Button>
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50" data-testid="profile-editor-label">
-          {draft.label}
-        </h1>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Profile"
+        title={draft.label}
+        titleTestId="profile-editor-label"
+        backHref="/profiles"
+        action={
+          <Sheet>
+            <SheetTrigger render={<Button variant="outline" size="sm" />}>
+              <History aria-hidden="true" />
+              Export history
+            </SheetTrigger>
+            <SheetContent className="sm:max-w-md">
+              <SheetHeader>
+                <SheetTitle>Export history</SheetTitle>
+              </SheetHeader>
+              <BuildHistory profileId={profileId} />
+            </SheetContent>
+          </Sheet>
+        }
+      />
+
+
+      <div className="grid min-w-0 grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-10">
+        <div className="min-w-0 space-y-10">
+          <section className="space-y-6">
+            <SectionHeader
+              title="Profile setup"
+              description="Name this resume, choose how you introduce yourself, and pick a template."
+            />
+            <ProfileBasics
+              draft={draft}
+              taglineKeys={Object.keys(content.taglines)}
+              onChange={updateDraft}
+            />
+            <TemplateGallery
+              selected={draft.template}
+              onSelect={(template) => updateDraft({ template })}
+            />
+          </section>
+
+          <section className="space-y-6">
+            <SectionHeader
+              title="Resume content"
+              description="Choose the experience, skills, and education that appear on this resume. Every change saves and re-renders the preview automatically."
+            />
+            <ExperienceEditor content={content} draft={draft} onChange={updateDraft} />
+            <SkillsEditor content={content} draft={draft} onChange={updateDraft} />
+            <EducationEditor content={content} draft={draft} onChange={updateDraft} />
+          </section>
+        </div>
+
+        <div className="min-w-0">
+          <LivePreview
+            html={previewHtml}
+            isLoading={previewLoading}
+            error={previewError}
+            exportAction={
+              <Button
+                variant="cta"
+                size="sm"
+                onClick={() => void exportPdf.run()}
+                disabled={exportPdf.isPending}
+                data-testid="build-pdf"
+              >
+                <FileDown aria-hidden="true" />
+                {exportPdf.isPending ? "Building…" : "Export PDF"}
+              </Button>
+            }
+            status={
+              <>
+                <ErrorMessage error={exportPdf.buildError} />
+                <LatestPdfLink build={exportPdf.lastBuild} />
+              </>
+            }
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Keeps the editor shell's shape while the profile and content queries
+ * resolve, so the page doesn't jump once data arrives.
+ */
+function EditorSkeleton() {
+  return (
+    <div className="space-y-8" aria-busy="true" aria-label="Loading profile">
+      <div className="space-y-3">
+        <div className="h-3 w-16 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+        <div className="h-8 w-64 max-w-full animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="flex flex-col gap-4">
-          <ProfileBasics
-            draft={draft}
-            taglineKeys={Object.keys(content.taglines)}
-            onChange={updateDraft}
-          />
-          <TemplateGallery selected={draft.template} onSelect={(template) => updateDraft({ template })} />
-          <ExperienceEditor content={content} draft={draft} onChange={updateDraft} />
-          <SkillsEditor content={content} draft={draft} onChange={updateDraft} />
-          <EducationEditor content={content} draft={draft} onChange={updateDraft} />
-          <BuildPanel profileId={profileId} ensureSaved={ensureSaved} />
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-10">
+        <div className="space-y-6">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-48 animate-pulse rounded-2xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900"
+            />
+          ))}
         </div>
-
-        <div>
-          <LivePreview html={previewHtml} isLoading={previewLoading} error={previewError} />
-        </div>
+        <div className="h-[75vh] animate-pulse rounded-2xl border border-slate-200/80 bg-slate-100/80 lg:h-[calc(100vh-6rem)] dark:border-slate-800 dark:bg-slate-950" />
       </div>
     </div>
   );

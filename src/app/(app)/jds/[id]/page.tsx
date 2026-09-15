@@ -1,14 +1,16 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState } from "react";
+import { ExternalLink, Sparkles } from "lucide-react";
 import { useJd } from "@/hooks/use-jds";
 import { useProfiles } from "@/hooks/use-profiles";
 import { useCreateEvaluation } from "@/hooks/use-evaluations";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader, SectionHeader } from "@/components/ui/page-header";
+import { FormField } from "@/components/ui/form-field";
 import { ErrorMessage } from "@/components/content/error-message";
 import { EvaluationResults } from "@/components/evaluations/evaluation-results";
 
@@ -26,7 +28,6 @@ import { EvaluationResults } from "@/components/evaluations/evaluation-results";
  */
 export default function JdDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const jdId = params.id;
   const { data: jd, isLoading, error } = useJd(jdId);
   const { data: profiles } = useProfiles();
@@ -34,83 +35,112 @@ export default function JdDetailPage() {
   const [profileId, setProfileId] = useState("");
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Job description</h1>
-        <Button variant="outline" size="sm" onClick={() => router.push("/jds")}>
-          Back to list
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        backHref="/jds"
+        eyebrow="Job description"
+        title={isLoading ? "Loading…" : (jd?.title ?? "Untitled")}
+        description={
+          jd
+            ? [jd.company, jd.source_type === "url" ? "Imported from a URL" : undefined]
+                .filter(Boolean)
+                .join(" · ") || undefined
+            : undefined
+        }
+      >
+        {jd && (
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Badge variant="outline">{jd.source_type}</Badge>
+            {jd.url && (
+              <a
+                href={jd.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-slate-600 underline-offset-4 hover:underline dark:text-slate-400"
+              >
+                View original posting
+                <ExternalLink aria-hidden="true" className="size-3.5" />
+              </a>
+            )}
+          </div>
+        )}
+      </PageHeader>
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
       <ErrorMessage error={error} />
 
-      {jd && (
-        <Card data-testid="jd-detail-card">
-          <CardHeader>
-            <CardTitle>{jd.title ?? "Untitled"}</CardTitle>
-            <CardDescription className="flex items-center gap-2">
-              {jd.company && <span>{jd.company}</span>}
-              <Badge variant="outline">{jd.source_type}</Badge>
-              {jd.url && (
-                <a
-                  href={jd.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-muted-foreground hover:text-foreground underline"
-                >
-                  source
-                </a>
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-muted-foreground max-h-64 max-w-3xl overflow-auto text-sm leading-relaxed whitespace-pre-wrap">
-              {jd.text}
-            </pre>
+      {isLoading && (
+        <Card aria-hidden="true">
+          <CardContent className="space-y-3">
+            <div className="bg-muted h-4 w-full animate-pulse rounded-md" />
+            <div className="bg-muted h-4 w-11/12 animate-pulse rounded-md" />
+            <div className="bg-muted h-4 w-4/5 animate-pulse rounded-md" />
+            <div className="bg-muted h-4 w-2/3 animate-pulse rounded-md" />
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Evaluate a profile against this job description</CardTitle>
-          <CardDescription>
-            Runs deterministic metrics ($0, instant) and an LLM-judge call (spends real, capped
-            tokens) against the backend.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5 sm:w-64">
-            <Label htmlFor="evaluate-profile-select">Profile</Label>
-            <select
-              id="evaluate-profile-select"
-              data-testid="evaluate-profile-select"
-              className="border-border bg-background h-8 rounded-lg border px-2 text-sm"
-              value={profileId}
-              onChange={(e) => setProfileId(e.target.value)}
+      <section className="space-y-4">
+        <SectionHeader
+          title="Run an evaluation"
+          description="Deterministic metrics are instant and free; the LLM judge spends real, capped tokens."
+        />
+        <Card>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 gap-5 sm:max-w-md">
+              <FormField
+                label="Profile"
+                htmlFor="evaluate-profile-select"
+                hint="Which tailored resume should be scored against this role?"
+              >
+                <select
+                  id="evaluate-profile-select"
+                  data-testid="evaluate-profile-select"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm text-slate-900 transition-all outline-none focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:bg-slate-900"
+                  value={profileId}
+                  onChange={(e) => setProfileId(e.target.value)}
+                >
+                  <option value="">Select a profile…</option>
+                  {profiles?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label} ({p.name})
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+
+            <ErrorMessage error={createEvaluation.error} />
+
+            <Button
+              variant="cta"
+              disabled={!profileId || createEvaluation.isPending}
+              onClick={() => createEvaluation.mutate({ profile_id: profileId, jd_id: jdId })}
+              data-testid="run-evaluation-button"
             >
-              <option value="">Select a profile…</option>
-              {profiles?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label} ({p.name})
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button
-            disabled={!profileId || createEvaluation.isPending}
-            onClick={() => createEvaluation.mutate({ profile_id: profileId, jd_id: jdId })}
-            className="self-start"
-            data-testid="run-evaluation-button"
-          >
-            {createEvaluation.isPending ? "Evaluating…" : "Run evaluation"}
-          </Button>
-          <ErrorMessage error={createEvaluation.error} />
-        </CardContent>
-      </Card>
+              <Sparkles aria-hidden="true" />
+              {createEvaluation.isPending ? "Evaluating…" : "Run evaluation"}
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
 
       {createEvaluation.data && <EvaluationResults evaluation={createEvaluation.data} />}
+
+      {jd && (
+        <section className="space-y-4">
+          <SectionHeader
+            title="Posting text"
+            description="The stored text this evaluation reads from."
+          />
+          <Card data-testid="jd-detail-card">
+            <CardContent>
+              <pre className="max-h-96 overflow-auto text-sm leading-relaxed break-words whitespace-pre-wrap text-slate-600 dark:text-slate-400">
+                {jd.text}
+              </pre>
+            </CardContent>
+          </Card>
+        </section>
+      )}
     </div>
   );
 }

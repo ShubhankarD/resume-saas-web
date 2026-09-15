@@ -1,8 +1,11 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEvaluation } from "@/hooks/use-evaluations";
-import { Button } from "@/components/ui/button";
+import { useJds } from "@/hooks/use-jds";
+import { useProfiles } from "@/hooks/use-profiles";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { ErrorMessage } from "@/components/content/error-message";
 import { EvaluationResults } from "@/components/evaluations/evaluation-results";
 
@@ -12,20 +15,36 @@ import { EvaluationResults } from "@/components/evaluations/evaluation-results";
  * created or reopened from history. */
 export default function EvaluationDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const { data: evaluation, isLoading, error } = useEvaluation(params.id);
+  const { data: jds } = useJds();
+  const { data: profiles } = useProfiles();
+
+  const profileLabel = evaluation
+    ? (profiles?.find((p) => p.id === evaluation.profile_id)?.label ?? null)
+    : null;
+  const jdTitle = evaluation ? (jds?.find((j) => j.id === evaluation.jd_id)?.title ?? null) : null;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Evaluation</h1>
-        <Button variant="outline" size="sm" onClick={() => router.push("/evaluations")}>
-          Back to list
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        backHref="/evaluations"
+        eyebrow="Evaluation"
+        title={profileLabel ?? (isLoading ? "Loading…" : "Evaluation")}
+        description={jdTitle ? `Scored against ${jdTitle}` : undefined}
+      />
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
       <ErrorMessage error={error} />
+
+      {isLoading && (
+        <Card aria-hidden="true">
+          <CardContent className="space-y-3">
+            <div className="bg-muted h-6 w-40 animate-pulse rounded-md" />
+            <div className="bg-muted h-4 w-full animate-pulse rounded-md" />
+            <div className="bg-muted h-4 w-10/12 animate-pulse rounded-md" />
+            <div className="bg-muted h-4 w-8/12 animate-pulse rounded-md" />
+          </CardContent>
+        </Card>
+      )}
 
       {evaluation && <EvaluationResults evaluation={evaluation} />}
     </div>

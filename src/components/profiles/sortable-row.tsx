@@ -1,21 +1,38 @@
 "use client";
 
+import * as React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { cn } from "cn";
 
 /**
- * Shared drag handle + row wrapper for every reorderable list in the
- * profile editor (roles, groups, bullets, skills, education) — one
- * `@dnd-kit/sortable` `useSortable()` integration reused everywhere instead
- * of four bespoke ones. Verified against the installed @dnd-kit/sortable
- * 10.0.0 + @dnd-kit/core 6.3.1 (current stable releases as of this writing)
- * — `useSortable({id})` returning `{attributes, listeners, setNodeRef,
- * transform, transition}` and `CSS.Transform.toString()` for the drag
- * transform are that version's real, current API (checked against the
- * package's shipped `.d.ts`), not assumed from memory.
+ * Shared row wrapper for every reorderable list in the profile editor
+ * (roles, groups, bullets, skills, education) — one `@dnd-kit/sortable`
+ * `useSortable()` integration reused everywhere instead of four bespoke
+ * ones. Verified against the installed @dnd-kit/sortable 10.0.0 +
+ * @dnd-kit/core 6.3.1 — `useSortable({id})` returning `{attributes,
+ * listeners, setNodeRef, transform, transition}` and
+ * `CSS.Transform.toString()` for the drag transform are that version's
+ * real API.
+ *
+ * The row itself carries no drag listeners: they are published through
+ * context and attached by `<SortableGrip />`, which the row's content
+ * places wherever the design needs it (inside an `EditorCard`'s
+ * `dragHandle` slot, in a row's leading gutter, ...). Keeping the
+ * listeners on an explicit handle is what stops a drag from also toggling
+ * the surrounding collapsible, while the handle staying a real focusable
+ * `<button>` carrying dnd-kit's `attributes` keeps keyboard reordering
+ * (the `sortableKeyboardCoordinates` sensor) working.
  */
+
+type SortableHandleValue = {
+  attributes: ReturnType<typeof useSortable>["attributes"];
+  listeners: ReturnType<typeof useSortable>["listeners"];
+};
+
+const SortableHandleContext = React.createContext<SortableHandleValue | null>(null);
+
 export function SortableRow({
   id,
   children,
@@ -34,26 +51,54 @@ export function SortableRow({
     transition,
   };
 
+  const handle = React.useMemo<SortableHandleValue>(
+    () => ({ attributes, listeners }),
+    [attributes, listeners],
+  );
+
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
+    <SortableHandleContext.Provider value={handle}>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "group/sortable-row relative min-w-0",
+          isDragging && "z-10 opacity-80 [&_*]:cursor-grabbing",
+          className,
+        )}
+      >
+        {children}
+      </div>
+    </SortableHandleContext.Provider>
+  );
+}
+
+/**
+ * The grip affordance for the nearest enclosing `SortableRow`. Muted until
+ * the row is hovered or the grip itself is focused.
+ */
+export function SortableGrip({
+  label = "Drag to reorder",
+  className,
+}: {
+  label?: string;
+  className?: string;
+}) {
+  const handle = React.useContext(SortableHandleContext);
+  if (!handle) return null;
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
       className={cn(
-        "flex items-start gap-1.5",
-        isDragging && "z-10 opacity-70",
+        "inline-flex size-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-slate-300 transition-colors duration-150 outline-none group-hover/sortable-row:text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-3 focus-visible:ring-ring/40 active:cursor-grabbing dark:text-slate-700 dark:group-hover/sortable-row:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200",
         className,
       )}
+      {...handle.attributes}
+      {...handle.listeners}
     >
-      <button
-        type="button"
-        aria-label="Drag to reorder"
-        className="text-muted-foreground hover:text-foreground mt-2 shrink-0 cursor-grab touch-none active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="size-4" />
-      </button>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
+      <GripVertical aria-hidden="true" className="size-4" />
+    </button>
   );
 }

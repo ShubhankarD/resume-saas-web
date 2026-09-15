@@ -26,21 +26,26 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/evaluations", label: "Evaluations", icon: ClipboardCheck },
 ];
 
+/**
+ * Primary product navigation. Rendered three ways: expanded in the desktop
+ * sidebar, as an icon rail when that sidebar is collapsed, and inside the
+ * mobile drawer. The active state is deliberately a muted surface plus a thin
+ * Electric Azure indicator — never amber (spec §36 reserves amber for CTAs and
+ * AI affordances).
+ */
 export function SidebarNav({
-  orientation = "vertical",
   collapsed = false,
+  onNavigate,
 }: {
-  orientation?: "vertical" | "horizontal";
   collapsed?: boolean;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
 
   return (
     <nav
-      className={cn(
-        "flex gap-1",
-        orientation === "vertical" ? "flex-col px-3" : "w-max flex-row",
-      )}
+      aria-label="Main"
+      className={cn("flex flex-col gap-1", collapsed ? "px-2" : "px-1")}
     >
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname?.startsWith(`${href}/`);
@@ -48,17 +53,31 @@ export function SidebarNav({
           <Link
             key={href}
             href={href}
+            onClick={onNavigate}
             title={collapsed ? label : undefined}
+            aria-label={collapsed ? label : undefined}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
-              collapsed && "justify-center px-0",
+              "group focus-visible:ring-ring/40 relative flex h-10 shrink-0 items-center rounded-lg text-sm transition-colors outline-none focus-visible:ring-3",
+              collapsed ? "w-10 justify-center px-0" : "gap-3 px-3",
               active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                ? "bg-muted text-foreground font-semibold"
+                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground font-medium",
             )}
           >
+            {active && (
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute rounded-full bg-blue-600 dark:bg-blue-400",
+                  collapsed
+                    ? "inset-x-2 bottom-1 h-0.5"
+                    : "top-1/2 left-0 h-5 w-0.5 -translate-y-1/2",
+                )}
+              />
+            )}
             <Icon className="size-[18px] shrink-0" strokeWidth={2} />
-            {!collapsed && <span>{label}</span>}
+            {!collapsed && <span className="truncate">{label}</span>}
           </Link>
         );
       })}

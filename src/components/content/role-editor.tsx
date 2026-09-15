@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Pencil } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EditorCard } from "@/components/ui/editor-card";
+import { Accordion } from "@/components/ui/accordion";
+import { FormField } from "@/components/ui/form-field";
+import { SectionHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
 import { ErrorMessage } from "@/components/content/error-message";
 import { GroupEditor } from "@/components/content/group-editor";
@@ -57,14 +61,14 @@ export function RoleEditor({
   onUpdateBullet: (groupId: string, bulletId: string, body: BulletUpdate) => Promise<unknown>;
   onDeleteBullet: (groupId: string, bulletId: string) => void;
 }) {
-  const [editingRole, setEditingRole] = useState(false);
+  const fieldId = useId();
   const [groupCreateError, setGroupCreateError] = useState<unknown>(null);
   const [roleUpdateError, setRoleUpdateError] = useState<unknown>(null);
 
   const {
     register: registerRole,
     handleSubmit: handleRoleSubmit,
-    formState: { errors: roleErrors, isSubmitting: roleSubmitting },
+    formState: { errors: roleErrors, isSubmitting: roleSubmitting, isDirty: roleDirty },
   } = useForm<RoleUpdate>({
     resolver: zodResolver(roleUpdateSchema),
     defaultValues: { title: role.title, org: role.org, dates: role.dates },
@@ -80,122 +84,159 @@ export function RoleEditor({
     defaultValues: { id: "", heading: "" },
   });
 
-  return (
-    <Card>
-      <CardHeader>
-        {editingRole ? (
-          <form
-            onSubmit={handleRoleSubmit(async (values) => {
-              setRoleUpdateError(null);
-              try {
-                await onUpdateRole(values);
-                setEditingRole(false);
-              } catch (err) {
-                setRoleUpdateError(err);
-              }
-            })}
-            className="grid grid-cols-1 gap-2 sm:grid-cols-3"
-          >
-            <div>
-              <Input placeholder="Title" {...registerRole("title")} />
-              {roleErrors.title && (
-                <p className="text-destructive text-xs">{roleErrors.title.message}</p>
-              )}
-            </div>
-            <div>
-              <Input placeholder="Organization" {...registerRole("org")} />
-              {roleErrors.org && (
-                <p className="text-destructive text-xs">{roleErrors.org.message}</p>
-              )}
-            </div>
-            <div>
-              <Input placeholder="Dates" {...registerRole("dates")} />
-              {roleErrors.dates && (
-                <p className="text-destructive text-xs">{roleErrors.dates.message}</p>
-              )}
-            </div>
-            <div className="sm:col-span-3">
-              <ErrorMessage error={roleUpdateError} />
-            </div>
-            <div className="flex gap-2 sm:col-span-3">
-              <Button type="submit" size="sm" disabled={roleSubmitting}>
-                {roleSubmitting ? "Saving…" : "Save"}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setEditingRole(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-heading text-base font-medium">
-                {role.title} <span className="text-muted-foreground font-normal">· {role.org}</span>
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {role.dates} · id: {role.id}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Edit role"
-                onClick={() => setEditingRole(true)}
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-              <ConfirmDeleteButton label={`role ${role.title}`} onConfirm={onDeleteRole} />
-            </div>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {role.groups.map((group) => (
-          <GroupEditor
-            key={group.id}
-            group={group}
-            onUpdateGroup={(body) => onUpdateGroup(group.id, body)}
-            onDeleteGroup={() => onDeleteGroup(group.id)}
-            onCreateBullet={(body) => onCreateBullet(group.id, body)}
-            onUpdateBullet={(bulletId, body) => onUpdateBullet(group.id, bulletId, body)}
-            onDeleteBullet={(bulletId) => onDeleteBullet(group.id, bulletId)}
-          />
-        ))}
+  const bulletCount = role.groups.reduce((sum, group) => sum + group.bullets.length, 0);
 
+  return (
+    <EditorCard
+      title={role.title || "Untitled role"}
+      subtitle={role.org || undefined}
+      meta={role.dates || undefined}
+      actions={<ConfirmDeleteButton label={`role ${role.title}`} onConfirm={onDeleteRole} />}
+    >
+      <div className="space-y-8">
         <form
-          onSubmit={handleGroupSubmit(async (values) => {
-            setGroupCreateError(null);
+          onSubmit={handleRoleSubmit(async (values) => {
+            setRoleUpdateError(null);
             try {
-              await onCreateGroup({
-                id: values.id,
-                heading: values.heading.trim() ? values.heading.trim() : undefined,
-              });
-              resetGroupForm();
+              await onUpdateRole(values);
             } catch (err) {
-              setGroupCreateError(err);
+              setRoleUpdateError(err);
             }
           })}
-          className="flex flex-col gap-2 sm:flex-row sm:items-start"
+          className="space-y-5"
         >
-          <div>
-            <Input placeholder="group-id" {...registerGroup("id")} className="sm:w-32" />
-            {groupErrors.id && <p className="text-destructive text-xs">{groupErrors.id.message}</p>}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <FormField
+              label="Title"
+              htmlFor={`${fieldId}-title`}
+              error={roleErrors.title?.message}
+              required
+            >
+              <Input
+                id={`${fieldId}-title`}
+                placeholder="Senior Consultant"
+                aria-invalid={roleErrors.title ? true : undefined}
+                {...registerRole("title")}
+              />
+            </FormField>
+
+            <FormField
+              label="Organization"
+              htmlFor={`${fieldId}-org`}
+              error={roleErrors.org?.message}
+              required
+            >
+              <Input
+                id={`${fieldId}-org`}
+                placeholder="Acme Corp"
+                aria-invalid={roleErrors.org ? true : undefined}
+                {...registerRole("org")}
+              />
+            </FormField>
+
+            <FormField
+              label="Dates"
+              htmlFor={`${fieldId}-dates`}
+              error={roleErrors.dates?.message}
+              required
+              hint="Free text, e.g. “Jan 2024 – Present”."
+            >
+              <Input
+                id={`${fieldId}-dates`}
+                placeholder="2020--Present"
+                aria-invalid={roleErrors.dates ? true : undefined}
+                {...registerRole("dates")}
+              />
+            </FormField>
           </div>
-          <div className="flex-1">
-            <Input placeholder="Group heading (optional)" {...registerGroup("heading")} />
-          </div>
-          <Button type="submit" size="sm" disabled={groupSubmitting}>
-            {groupSubmitting ? "Adding…" : "Add group"}
+
+          <ErrorMessage error={roleUpdateError} />
+
+          <Button type="submit" disabled={roleSubmitting || !roleDirty}>
+            {roleSubmitting ? "Saving…" : "Save role details"}
           </Button>
         </form>
-        <ErrorMessage error={groupCreateError} />
-      </CardContent>
-    </Card>
+
+        <div className="space-y-4 border-t border-slate-200/80 pt-6 dark:border-slate-800">
+          <SectionHeader
+            title="Bullet groups"
+            description={`${role.groups.length} ${role.groups.length === 1 ? "group" : "groups"} · ${bulletCount} ${bulletCount === 1 ? "bullet" : "bullets"}`}
+          />
+
+          {role.groups.length === 0 ? (
+            <EmptyState
+              title="No bullet groups yet"
+              description="Groups keep related accomplishments together — add one below to start writing bullets for this role."
+            />
+          ) : (
+            <Accordion>
+              {role.groups.map((group) => (
+                <GroupEditor
+                  key={group.id}
+                  group={group}
+                  onUpdateGroup={(body) => onUpdateGroup(group.id, body)}
+                  onDeleteGroup={() => onDeleteGroup(group.id)}
+                  onCreateBullet={(body) => onCreateBullet(group.id, body)}
+                  onUpdateBullet={(bulletId, body) => onUpdateBullet(group.id, bulletId, body)}
+                  onDeleteBullet={(bulletId) => onDeleteBullet(group.id, bulletId)}
+                />
+              ))}
+            </Accordion>
+          )}
+
+          <form
+            onSubmit={handleGroupSubmit(async (values) => {
+              setGroupCreateError(null);
+              try {
+                await onCreateGroup({
+                  id: values.id,
+                  heading: values.heading.trim() ? values.heading.trim() : undefined,
+                });
+                resetGroupForm();
+              } catch (err) {
+                setGroupCreateError(err);
+              }
+            })}
+            className="space-y-5 rounded-xl border border-dashed border-slate-200 p-4 sm:p-5 dark:border-slate-800"
+          >
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <FormField
+                label="Group id"
+                htmlFor={`${fieldId}-group-id`}
+                error={groupErrors.id?.message}
+                required
+                hint="Lowercase letters, numbers, - or _"
+              >
+                <Input
+                  id={`${fieldId}-group-id`}
+                  placeholder="group-id"
+                  aria-invalid={groupErrors.id ? true : undefined}
+                  {...registerGroup("id")}
+                />
+              </FormField>
+
+              <FormField
+                label="Group heading"
+                htmlFor={`${fieldId}-group-heading`}
+                hint="Optional."
+              >
+                <Input
+                  id={`${fieldId}-group-heading`}
+                  placeholder="e.g. Platform modernisation"
+                  {...registerGroup("heading")}
+                />
+              </FormField>
+            </div>
+
+            <ErrorMessage error={groupCreateError} />
+
+            <Button type="submit" variant="outline" disabled={groupSubmitting}>
+              <Plus aria-hidden="true" className="size-4" />
+              {groupSubmitting ? "Adding…" : "Add group"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </EditorCard>
   );
 }

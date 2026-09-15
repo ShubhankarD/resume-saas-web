@@ -1,3 +1,4 @@
+import { AlertCircle } from "lucide-react";
 import { getErrorMessage } from "@/lib/api/client";
 
 /**
@@ -10,11 +11,12 @@ import { getErrorMessage } from "@/lib/api/client";
 export function ErrorMessage({ error }: { error: unknown }) {
   if (!error) return null;
   return (
-    <p
+    <div
       role="alert"
-      className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
+      className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
     >
-      {getErrorMessage(error)}
-    </p>
+      <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+      <span className="min-w-0 break-words">{getErrorMessage(error)}</span>
+    </div>
   );
 }
