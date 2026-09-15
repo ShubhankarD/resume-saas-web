@@ -23,7 +23,9 @@ type PageHeaderProps = {
 };
 
 /**
- * The standard page header: eyebrow -> title -> description -> primary action.
+ * The standard contextual page header: title + one-line description on the
+ * left, primary action on the right. Deliberately compact (64–80px tall) —
+ * this is a working screen header, not a marketing hero.
  */
 function PageHeader({
   eyebrow,
@@ -36,14 +38,14 @@ function PageHeader({
   titleTestId,
 }: PageHeaderProps): React.ReactElement {
   return (
-    <div data-slot="page-header" className={cn("space-y-5", className)}>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
+    <div data-slot="page-header" className={cn("space-y-4", className)}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2">
           {backHref ? (
             <Link
               href={backHref}
               aria-label="Go back"
-              className="focus-visible:ring-ring/50 mt-0.5 inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+              className="focus-visible:ring-ring/50 -ml-1 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
             >
               <ArrowLeft aria-hidden="true" className="size-4" />
             </Link>
@@ -51,20 +53,20 @@ function PageHeader({
 
           <div className="min-w-0">
             {eyebrow ? (
-              <p className="mb-1.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+              <p className="text-[11px] leading-4 font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                 {eyebrow}
               </p>
             ) : null}
 
             <h1
               data-testid={titleTestId}
-              className="text-2xl font-bold tracking-tight text-balance text-slate-900 sm:text-3xl dark:text-slate-50"
+              className="truncate text-xl font-bold tracking-[-0.02em] text-slate-900 sm:text-2xl dark:text-slate-50"
             >
               {title}
             </h1>
 
             {description ? (
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              <p className="mt-0.5 max-w-2xl truncate text-sm leading-6 text-slate-600 dark:text-slate-400">
                 {description}
               </p>
             ) : null}
@@ -100,14 +102,14 @@ function SectionHeader({
   return (
     <div
       data-slot="section-header"
-      className={cn("flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between", className)}
+      className={cn("flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between", className)}
     >
       <div className="min-w-0">
-        <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg dark:text-slate-100">
+        <h2 className="text-sm font-semibold tracking-[-0.01em] text-slate-900 sm:text-base dark:text-slate-100">
           {title}
         </h2>
         {description ? (
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+          <p className="mt-0.5 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
             {description}
           </p>
         ) : null}

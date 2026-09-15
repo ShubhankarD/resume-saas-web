@@ -56,7 +56,7 @@ function SheetContent({
         data-slot="sheet-content"
         data-side={side}
         className={cn(
-          "data-open:animate-in data-closed:animate-out fixed inset-y-0 z-50 flex h-full w-full max-w-sm flex-col gap-6 overflow-y-auto border-slate-200/80 bg-white p-6 shadow-2xl duration-200 outline-none sm:p-8 dark:border-slate-800 dark:bg-slate-900",
+          "data-open:animate-in data-closed:animate-out fixed inset-y-0 z-50 flex h-full w-full max-w-sm flex-col gap-5 overflow-y-auto border-slate-200 bg-white p-4 shadow-xl duration-200 outline-none sm:p-5 dark:border-slate-800 dark:bg-slate-900",
           side === "right"
             ? "data-open:slide-in-from-right data-closed:slide-out-to-right right-0 border-l"
             : "data-open:slide-in-from-left data-closed:slide-out-to-left left-0 border-r",
@@ -68,7 +68,7 @@ function SheetContent({
         <SheetPrimitive.Close
           data-slot="sheet-close-button"
           aria-label={closeLabel}
-          className="focus-visible:ring-ring/50 absolute top-5 right-5 inline-flex size-10 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          className="focus-visible:ring-ring/50 absolute top-4 right-4 inline-flex size-9 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
         >
           <X aria-hidden="true" className="size-4" />
         </SheetPrimitive.Close>
@@ -81,7 +81,7 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-header"
-      className={cn("flex flex-col gap-1.5 pr-12", className)}
+      className={cn("flex flex-col gap-1 pr-11", className)}
       {...props}
     />
   );
@@ -92,7 +92,7 @@ function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
     <SheetPrimitive.Title
       data-slot="sheet-title"
       className={cn(
-        "text-base font-semibold tracking-tight text-slate-900 sm:text-lg dark:text-slate-100",
+        "text-sm font-semibold tracking-[-0.01em] text-slate-900 sm:text-base dark:text-slate-100",
         className,
       )}
       {...props}
@@ -104,7 +104,7 @@ function SheetDescription({ className, ...props }: SheetPrimitive.Description.Pr
   return (
     <SheetPrimitive.Description
       data-slot="sheet-description"
-      className={cn("text-sm leading-relaxed text-slate-600 dark:text-slate-400", className)}
+      className={cn("text-sm leading-6 text-slate-600 dark:text-slate-400", className)}
       {...props}
     />
   );

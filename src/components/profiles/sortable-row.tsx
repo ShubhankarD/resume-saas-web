@@ -74,8 +74,9 @@ export function SortableRow({
 }
 
 /**
- * The grip affordance for the nearest enclosing `SortableRow`. Muted until
- * the row is hovered or the grip itself is focused.
+ * The grip affordance for the nearest enclosing `SortableRow`: a 32px
+ * pointer target of its own (never the whole row), muted `text-slate-400`
+ * until hovered, per the blueprint's drag-handle spec.
  */
 export function SortableGrip({
   label = "Drag to reorder",
@@ -92,7 +93,7 @@ export function SortableGrip({
       type="button"
       aria-label={label}
       className={cn(
-        "inline-flex size-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-slate-300 transition-colors duration-150 outline-none group-hover/sortable-row:text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-3 focus-visible:ring-ring/40 active:cursor-grabbing dark:text-slate-700 dark:group-hover/sortable-row:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+        "focus-visible:ring-ring/40 inline-flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-slate-400 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-600 focus-visible:ring-3 active:cursor-grabbing dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300",
         className,
       )}
       {...handle.attributes}

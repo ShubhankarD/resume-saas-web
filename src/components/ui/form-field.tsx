@@ -13,8 +13,7 @@ type FormFieldProps = {
   children: React.ReactNode;
 };
 
-const labelClassName =
-  "mb-2 block text-xs font-semibold tracking-wider uppercase text-slate-600 dark:text-slate-400";
+const labelClassName = "mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300";
 
 /**
  * Label + control + hint/error, using the shared form-label type style.
@@ -62,7 +61,7 @@ function FormField({
       {children}
 
       {hint && !error ? (
-        <p id={hintId} className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+        <p id={hintId} className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
           {hint}
         </p>
       ) : null}
@@ -71,7 +70,7 @@ function FormField({
         <p
           id={errorId}
           role="alert"
-          className="mt-2 text-xs leading-relaxed font-medium text-red-600 dark:text-red-400"
+          className="mt-1.5 text-xs leading-5 font-medium text-red-600 dark:text-red-400"
         >
           {error}
         </p>

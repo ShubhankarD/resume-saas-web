@@ -50,11 +50,11 @@ function toBulletBody(values: BulletFormValues): BulletUpdate {
  */
 function AiBulletActions() {
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
+    <div className="mt-2 flex flex-wrap items-center gap-2">
       {AI_BULLET_ACTIONS.map((action) => (
         // TODO: wire to a real rewrite handler (see AiBulletActions doc comment).
         <span key={action.id} title={`${action.label} — AI rewrites are coming soon.`}>
-          <AiActionChip label={action.label} disabled />
+          <AiActionChip label={action.label} className="h-7" disabled />
         </span>
       ))}
       <span className="text-xs text-slate-500 dark:text-slate-400">Coming soon</span>
@@ -91,11 +91,9 @@ export function BulletRow({
 
   if (!editing) {
     return (
-      <li className="group/bullet flex items-start gap-4 rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs transition-colors duration-150 hover:border-slate-300 sm:p-5 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <p className="text-sm leading-relaxed text-slate-800 dark:text-slate-200">
-            {bullet.text}
-          </p>
+      <li className="group/bullet flex items-start gap-3 py-3 transition-colors duration-150">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <p className="text-sm leading-6 text-slate-800 dark:text-slate-200">{bullet.text}</p>
           {(bullet.tags.length > 0 || bullet.variant_group) && (
             <div className="flex flex-wrap items-center gap-1.5">
               {bullet.tags.map((tag) => (
@@ -112,7 +110,7 @@ export function BulletRow({
         <div className="flex shrink-0 items-center gap-1">
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             aria-label="Edit bullet"
             onClick={() => setEditing(true)}
             className="text-slate-400 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-100"
@@ -126,7 +124,7 @@ export function BulletRow({
   }
 
   return (
-    <li className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+    <li className="py-4">
       <form
         onSubmit={handleSubmit(async (values) => {
           setUpdateError(null);
@@ -137,7 +135,7 @@ export function BulletRow({
             setUpdateError(err);
           }
         })}
-        className="space-y-5"
+        className="space-y-4"
       >
         <div>
           <FormField label="Bullet" htmlFor={`${fieldId}-text`} error={errors.text?.message}>
@@ -182,12 +180,12 @@ export function BulletRow({
 
         <ErrorMessage error={updateError} />
 
-        <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Save bullet"}
-          </Button>
-          <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
             Cancel
+          </Button>
+          <Button type="submit" size="sm" disabled={isSubmitting}>
+            {isSubmitting ? "Saving…" : "Save bullet"}
           </Button>
         </div>
       </form>
@@ -219,9 +217,12 @@ function toBulletCreateBody(values: BulletCreateFormValues): BulletCreate {
 export function BulletCreateForm({
   onSubmit,
   error,
+  onCancel,
 }: {
   onSubmit: (values: BulletCreate) => Promise<unknown>;
   error?: unknown;
+  /** Optional — renders a Cancel control beside the submit button. */
+  onCancel?: () => void;
 }) {
   const fieldId = useId();
   const {
@@ -247,7 +248,7 @@ export function BulletCreateForm({
           // form from resetting/losing the user's input on failure.
         }
       })}
-      className="space-y-5 rounded-xl border border-dashed border-slate-200 p-4 sm:p-5 dark:border-slate-800"
+      className="space-y-4 border-t border-slate-200 pt-4 dark:border-slate-800"
     >
       <div>
         <FormField
@@ -266,7 +267,7 @@ export function BulletCreateForm({
         <AiBulletActions />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField
           label="Bullet id"
           htmlFor={`${fieldId}-id`}
@@ -303,10 +304,17 @@ export function BulletCreateForm({
 
       <ErrorMessage error={error} />
 
-      <Button type="submit" disabled={isSubmitting}>
-        <Plus aria-hidden="true" className="size-4" />
-        {isSubmitting ? "Adding…" : "Add bullet"}
-      </Button>
+      <div className="flex flex-wrap justify-end gap-2">
+        {onCancel ? (
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : null}
+        <Button type="submit" size="sm" disabled={isSubmitting}>
+          <Plus aria-hidden="true" className="size-3.5" />
+          {isSubmitting ? "Adding…" : "Add bullet"}
+        </Button>
+      </div>
     </form>
   );
 }

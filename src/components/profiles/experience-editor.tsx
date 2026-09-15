@@ -17,10 +17,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Briefcase, Pencil } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EditorCard } from "@/components/ui/editor-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SectionHeader } from "@/components/ui/page-header";
 import { AI_BULLET_ACTIONS, AiActionChip } from "@/components/ui/ai-action-chip";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +41,10 @@ type GroupIn = RoleIn["groups"][number];
 /** Shared checkbox treatment for the include/exclude controls. */
 const checkboxClassName =
   "size-4 shrink-0 cursor-pointer rounded-sm border-slate-300 accent-slate-900 outline-none focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed dark:border-slate-600 dark:accent-slate-100";
+
+/** Section overline used above the excluded-bullet lists. */
+const overlineClassName =
+  "text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:text-slate-400";
 
 /**
  * Drag-and-drop id scheme: since roles/groups/bullets are three logically
@@ -115,47 +119,39 @@ export function ExperienceEditor({
     .filter((role): role is RoleIn => role !== undefined);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Experience</CardTitle>
-        <CardDescription>
-          Reorder roles, groups, and bullets by dragging their grips. Clear a bullet&rsquo;s
-          checkbox to leave it out of this resume; clear a whole group to hide that section.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {visibleRoles.length === 0 ? (
-          <EmptyState
-            icon={Briefcase}
-            title="No experience in this content set"
-            description="Add roles, internships, freelance projects, or contract work in the content editor, then come back to choose what belongs on this resume."
-          />
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+    <section className="space-y-6">
+      <SectionHeader
+        title="Experience"
+        description="Drag a grip to reorder roles, groups, and bullets. Clear a checkbox to leave that bullet — or a whole group — off this resume."
+      />
+
+      {visibleRoles.length === 0 ? (
+        <EmptyState
+          icon={Briefcase}
+          title="No experience yet"
+          description="Add roles, internships, or projects in the content editor, then choose what belongs on this resume."
+        />
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={visibleRoles.map((role) => `role:${role.id}`)}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={visibleRoles.map((role) => `role:${role.id}`)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-3">
-                {visibleRoles.map((role) => (
-                  <RoleCard
-                    key={`role:${role.id}`}
-                    role={role}
-                    content={content}
-                    draft={draft}
-                    onChange={onChange}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        )}
-      </CardContent>
-    </Card>
+            <div className="space-y-3">
+              {visibleRoles.map((role) => (
+                <RoleCard
+                  key={`role:${role.id}`}
+                  role={role}
+                  content={content}
+                  draft={draft}
+                  onChange={onChange}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+    </section>
   );
 }
 
@@ -176,6 +172,8 @@ function RoleCard({
     0,
   );
 
+  // `RoleIn` has no location field and `dates` is one freeform string, so the
+  // collapsed row reads "<org> · <dates>" rather than inventing sub-fields.
   const summary = [role.org].filter(Boolean).join(" · ");
 
   return (
@@ -193,7 +191,7 @@ function RoleCard({
         }
       >
         {groupIds.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
             This role has no bullet groups yet.
           </p>
         ) : (
@@ -201,7 +199,7 @@ function RoleCard({
             items={groupIds.map((groupId) => `group:${role.id}:${groupId}`)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-6">
+            <div className="space-y-5">
               {groupIds.map((groupId) => {
                 const group = (role.groups ?? []).find((g) => g.id === groupId);
                 if (!group) return null;
@@ -223,6 +221,12 @@ function RoleCard({
   );
 }
 
+/**
+ * A bullet group inside a role. Deliberately *not* a card: the blueprint
+ * forbids nesting cards inside editor cards, so a group is a header row plus
+ * an indented body, and the only border level below the role card is the one
+ * around each included-bullet row.
+ */
 function GroupBlock({
   roleId,
   group,
@@ -274,12 +278,9 @@ function GroupBlock({
 
   return (
     <SortableRow id={`group:${roleId}:${group.id}`}>
-      <div className={cn("space-y-3", !groupIncluded && "opacity-80")}>
+      <div className={cn("space-y-2.5", !groupIncluded && "opacity-75")}>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <SortableGrip
-            label={`Reorder group ${heading || group.id}`}
-            className="-ml-2 sm:-ml-2.5"
-          />
+          <SortableGrip label={`Reorder group ${heading || group.id}`} className="-ml-1.5" />
 
           <input
             type="checkbox"
@@ -295,7 +296,7 @@ function GroupBlock({
               autoFocus
               defaultValue={heading}
               aria-label="Group heading"
-              className="h-9 w-56 max-w-full"
+              className="h-8 w-56 max-w-full"
               onBlur={(e) => {
                 setHeadingOverride(e.target.value);
                 setEditingHeading(false);
@@ -304,7 +305,7 @@ function GroupBlock({
           ) : (
             <button
               type="button"
-              className="group/heading inline-flex min-h-9 items-center gap-1.5 rounded-lg px-1.5 text-sm font-semibold tracking-tight text-slate-900 transition-colors duration-150 outline-none hover:bg-slate-100 focus-visible:ring-3 focus-visible:ring-ring/40 dark:text-slate-100 dark:hover:bg-slate-800"
+              className="group/heading focus-visible:ring-ring/40 inline-flex h-8 items-center gap-1.5 rounded-md px-1.5 text-sm font-semibold tracking-tight text-slate-900 transition-colors duration-150 outline-none hover:bg-slate-100 focus-visible:ring-3 dark:text-slate-100 dark:hover:bg-slate-800"
               onClick={() => setEditingHeading(true)}
             >
               {heading || (
@@ -320,11 +321,7 @@ function GroupBlock({
             </button>
           )}
 
-          {!groupIncluded && (
-            <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              Hidden
-            </span>
-          )}
+          {!groupIncluded && <span className={cn(overlineClassName, "shrink-0")}>Hidden</span>}
 
           <span className="ml-auto truncate text-xs text-slate-400 dark:text-slate-500">
             {group.id}
@@ -332,17 +329,17 @@ function GroupBlock({
         </div>
 
         {bullets.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="pl-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             This group has no bullets yet.
           </p>
         ) : (
-          <>
+          <div className="space-y-3 pl-2 sm:pl-3.5">
             {orderedSelected.length > 0 && (
               <SortableContext
                 items={orderedSelected.map((bid) => `bullet:${roleId}:${group.id}:${bid}`)}
                 strategy={verticalListSortingStrategy}
               >
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {orderedSelected.map((bulletId, index) => {
                     const bullet = bullets.find((b) => b.id === bulletId);
                     if (!bullet) return null;
@@ -373,34 +370,29 @@ function GroupBlock({
             )}
 
             {excludedBullets.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:text-slate-400">
-                  Not included
-                </p>
-                <ul className="space-y-2">
+              <div className="space-y-1.5 border-t border-slate-200 pt-3 dark:border-slate-800">
+                <p className={overlineClassName}>Not included ({excludedBullets.length})</p>
+                <ul className="space-y-0.5">
                   {excludedBullets.map((bullet) => (
-                    <li
-                      key={bullet.id}
-                      className="flex items-start gap-2.5 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/40"
-                    >
-                      <span className="inline-flex min-h-9 items-center">
+                    <li key={bullet.id} className="list-none">
+                      <label className="flex cursor-pointer items-start gap-2.5 rounded-md px-2 py-2 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60">
                         <input
                           type="checkbox"
-                          className={checkboxClassName}
+                          className={cn(checkboxClassName, "mt-0.5")}
                           checked={false}
                           onChange={() => toggleBullet(bullet.id, true)}
                           aria-label={`Include bullet ${bullet.id}`}
                         />
-                      </span>
-                      <span className="min-w-0 flex-1 py-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                        {bullet.text}
-                      </span>
+                        <span className="min-w-0 flex-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                          {bullet.text}
+                        </span>
+                      </label>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </SortableRow>
@@ -423,11 +415,11 @@ function IncludedBullet({
   const textareaId = `bullet-text-${bullet.id}`;
 
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-xs transition-colors duration-150 sm:p-4 dark:border-slate-800 dark:bg-slate-900">
-      <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
-        <SortableGrip label={`Reorder bullet ${position}`} className="-ml-2 sm:-ml-2.5" />
+    <div className="rounded-lg border border-slate-200 bg-white p-3 transition-colors duration-150 hover:border-slate-300 sm:p-4 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
+      <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <SortableGrip label={`Reorder bullet ${position}`} className="-ml-1.5" />
 
-        <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+        <label className="inline-flex h-8 cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
           <input
             type="checkbox"
             className={checkboxClassName}
@@ -468,10 +460,10 @@ function IncludedBullet({
         `onAiAction(bullet.id, action.id)` handler once a rewrite endpoint and its
         React Query mutation hook exist.
       */}
-      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {AI_BULLET_ACTIONS.map((action) => (
           <span key={action.id} title="AI rewrite suggestions are coming soon">
-            <AiActionChip label={action.label} disabled />
+            <AiActionChip label={action.label} disabled className="h-7" />
           </span>
         ))}
       </div>

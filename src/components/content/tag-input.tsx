@@ -35,7 +35,7 @@ export function TagInput({
   }
 
   return (
-    <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/50 p-2 transition-colors duration-150 focus-within:border-amber-500 focus-within:bg-white dark:border-slate-800 dark:bg-slate-900/50 dark:focus-within:bg-slate-900">
+    <div className="flex min-h-10 flex-wrap items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50/50 p-1.5 transition-colors duration-150 focus-within:border-amber-500 focus-within:bg-white dark:border-slate-800 dark:bg-slate-900/50 dark:focus-within:bg-slate-900">
       {value.map((tag) => (
         <Badge key={tag} variant="secondary" className="h-7 gap-1 pr-1.5 pl-2.5">
           {tag}

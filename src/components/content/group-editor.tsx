@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
@@ -42,6 +43,7 @@ export function GroupEditor({
   const fieldId = useId();
   const [createError, setCreateError] = useState<unknown>(null);
   const [updateError, setUpdateError] = useState<unknown>(null);
+  const [adding, setAdding] = useState(false);
 
   const {
     register,
@@ -69,7 +71,7 @@ export function GroupEditor({
         </span>
       </AccordionTrigger>
 
-      <AccordionContent className="space-y-6 pt-5">
+      <AccordionContent className="space-y-6 pt-4">
         <form
           onSubmit={handleSubmit(async (values) => {
             setUpdateError(null);
@@ -102,33 +104,60 @@ export function GroupEditor({
           <ErrorMessage error={updateError} />
         </form>
 
-        {bulletCount > 0 && (
-          <ul className="flex flex-col gap-3">
-            {group.bullets.map((bullet) => (
-              <BulletRow
-                key={bullet.id}
-                bullet={bullet}
-                onUpdate={(body) => onUpdateBullet(bullet.id, body)}
-                onDelete={() => onDeleteBullet(bullet.id)}
-              />
-            ))}
-          </ul>
-        )}
+        <div className="space-y-3">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <h4 className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                Accomplishments
+              </h4>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {bulletCount} {bulletCount === 1 ? "bullet" : "bullets"} in this group
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-expanded={adding}
+              onClick={() => setAdding((v) => !v)}
+            >
+              <Plus aria-hidden="true" className="size-3.5" />
+              Add bullet
+            </Button>
+          </div>
 
-        <BulletCreateForm
-          error={createError}
-          onSubmit={async (values) => {
-            setCreateError(null);
-            try {
-              await onCreateBullet(values);
-            } catch (err) {
-              setCreateError(err);
-              throw err;
-            }
-          }}
-        />
+          {bulletCount > 0 && (
+            <ul className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+              {group.bullets.map((bullet) => (
+                <BulletRow
+                  key={bullet.id}
+                  bullet={bullet}
+                  onUpdate={(body) => onUpdateBullet(bullet.id, body)}
+                  onDelete={() => onDeleteBullet(bullet.id)}
+                />
+              ))}
+            </ul>
+          )}
 
-        <div className="flex justify-end border-t border-slate-200/80 pt-4 dark:border-slate-800">
+          {adding && (
+            <BulletCreateForm
+              error={createError}
+              onCancel={() => setAdding(false)}
+              onSubmit={async (values) => {
+                setCreateError(null);
+                try {
+                  await onCreateBullet(values);
+                  setAdding(false);
+                } catch (err) {
+                  setCreateError(err);
+                  throw err;
+                }
+              }}
+            />
+          )}
+        </div>
+
+        <div className="flex justify-end border-t border-slate-200 pt-4 dark:border-slate-800">
           <ConfirmDeleteButton
             label={`group ${group.heading ?? group.id}`}
             onConfirm={onDeleteGroup}

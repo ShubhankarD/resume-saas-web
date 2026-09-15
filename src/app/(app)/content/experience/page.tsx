@@ -126,14 +126,14 @@ export default function ExperiencePage() {
     <PageHeader
       eyebrow="Content library"
       title="Experience"
-      description="Your professional history. Each role holds bullet groups, and each group holds the accomplishments a tailored resume can draw from."
+      description="Each role holds bullet groups, and each group holds the accomplishments a tailored resume draws from."
       action={action}
     />
   );
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {header()}
         <ContentSkeleton rows={3} />
       </div>
@@ -142,7 +142,7 @@ export default function ExperiencePage() {
 
   if (error) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {header()}
         <ErrorMessage error={error} />
       </div>
@@ -151,15 +151,21 @@ export default function ExperiencePage() {
 
   if (!content) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {header()}
         <NoContentRecord section="your experience" />
       </div>
     );
   }
 
+  const roleCount = content.experience.length;
+  const bulletCount = content.experience.reduce(
+    (sum, role) => sum + role.groups.reduce((s, g) => s + g.bullets.length, 0),
+    0,
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {header(
         <Sheet open={addOpen} onOpenChange={setAddOpen}>
           <SheetTrigger
@@ -186,20 +192,30 @@ export default function ExperiencePage() {
         </Sheet>,
       )}
 
-      {content.experience.length === 0 ? (
+      {roleCount === 0 ? (
         <EmptyState
           icon={Briefcase}
           title="No experience added yet"
-          description="Add roles, internships, freelance projects, or contract work to build your professional history."
+          description="Add a role, internship, or project to start building your work history."
           action={
             <Button variant="cta" onClick={() => setAddOpen(true)}>
               <Plus aria-hidden="true" className="size-4" />
-              Add your first role
+              Add experience
             </Button>
           }
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+              Roles
+            </h2>
+            <p className="text-xs text-slate-500 tabular-nums dark:text-slate-400">
+              {roleCount} {roleCount === 1 ? "role" : "roles"} · {bulletCount}{" "}
+              {bulletCount === 1 ? "bullet" : "bullets"}
+            </p>
+          </div>
+
           {content.experience.map((role) => (
             <RoleEditor
               key={role.id}

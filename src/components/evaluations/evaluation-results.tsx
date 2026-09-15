@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { MetricCard } from "@/components/ui/metric-card";
 import type { EvaluationResponse } from "@/lib/api/evaluations";
 
 /**
@@ -98,8 +99,8 @@ function DeterministicSection({ deterministic }: { deterministic: DeterministicM
         <CardTitle>Deterministic metrics</CardTitle>
         <CardDescription>$0, instant — no LLM call involved.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6 text-sm">
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+      <CardContent className="space-y-5 text-sm">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="space-y-1">
             <span className="block text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
               Page count
@@ -137,7 +138,7 @@ function DeterministicSection({ deterministic }: { deterministic: DeterministicM
           </span>
           {style_compliance.over_word_limit.length === 0 &&
           style_compliance.multi_bold.length === 0 ? (
-            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
               Every bullet is within the word limit with at most one bolded phrase.
             </p>
           ) : (
@@ -161,7 +162,7 @@ function DeterministicSection({ deterministic }: { deterministic: DeterministicM
             XYZ/CAR front-loading ({xyz_format.bullets_with_bold} bullets checked)
           </span>
           {xyz_format.back_loaded.length === 0 ? (
-            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
               Every bolded metric is front-loaded in its bullet.
             </p>
           ) : (
@@ -179,7 +180,7 @@ function DeterministicSection({ deterministic }: { deterministic: DeterministicM
         <div className="flex flex-col gap-1.5">
           <span className="font-medium">Duplicate bullets</span>
           {duplicate_bullets.length === 0 ? (
-            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
               No near-duplicate bullets detected.
             </p>
           ) : (
@@ -211,7 +212,7 @@ function AxisScore({ label, axis }: { label: string; axis: ScoredAxis }) {
           {axis.score}/10
         </Badge>
       </div>
-      <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">{axis.reason}</p>
+      <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">{axis.reason}</p>
     </div>
   );
 }
@@ -225,8 +226,8 @@ function JudgeSection({ report }: { report: JudgeReport }) {
           Structured feedback from the evaluation&apos;s judge call.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6 text-sm">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <CardContent className="space-y-5 text-sm">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <AxisScore label="Technical fit" axis={report.technical_fit} />
           <AxisScore label="Seniority fit" axis={report.seniority_fit} />
           <AxisScore label="Domain fit" axis={report.domain_fit} />
@@ -234,11 +235,11 @@ function JudgeSection({ report }: { report: JudgeReport }) {
 
         <Separator />
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <span className="font-medium">Strengths</span>
             {report.strengths.length === 0 ? (
-              <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+              <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
                 None called out.
               </p>
             ) : (
@@ -252,7 +253,7 @@ function JudgeSection({ report }: { report: JudgeReport }) {
           <div className="flex flex-col gap-1.5">
             <span className="font-medium">Gaps</span>
             {report.gaps.length === 0 ? (
-              <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+              <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
                 None called out.
               </p>
             ) : (
@@ -320,54 +321,57 @@ function JudgeSection({ report }: { report: JudgeReport }) {
   );
 }
 
-function ScoreTile({ label, score }: { label: string; score: number }) {
-  return (
-    <div className="space-y-1.5">
-      <p className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-        {label}
-      </p>
-      <p className="text-3xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-slate-50">
-        {score}
-        <span className="text-base font-semibold text-slate-400">/10</span>
-      </p>
-    </div>
-  );
-}
-
 export function EvaluationResults({ evaluation }: { evaluation: EvaluationResponse }) {
   const deterministic = evaluation.deterministic as unknown as DeterministicMetrics | null;
   const llmReport = evaluation.llm_report as unknown as JudgeReport | null;
   const hasScores = evaluation.overall_score != null || evaluation.coverage_score != null;
 
   return (
-    <div className="space-y-6" data-testid="evaluation-results">
-      <Card>
-        <CardContent className="flex flex-wrap items-end justify-between gap-6">
-          {hasScores ? (
-            <div className="flex flex-wrap gap-10">
-              {evaluation.overall_score != null && (
-                <ScoreTile label="Overall fit" score={evaluation.overall_score} />
-              )}
-              {evaluation.coverage_score != null && (
-                <ScoreTile label="Requirement coverage" score={evaluation.coverage_score} />
-              )}
-            </div>
-          ) : (
+    <div className="space-y-4" data-testid="evaluation-results">
+      {hasScores ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {evaluation.overall_score != null && (
+            <MetricCard
+              label="Overall fit"
+              value={`${evaluation.overall_score}/10`}
+              progress={evaluation.overall_score * 10}
+            />
+          )}
+          {evaluation.coverage_score != null && (
+            <MetricCard
+              label="Requirement coverage"
+              value={`${evaluation.coverage_score}/10`}
+              progress={evaluation.coverage_score * 10}
+            />
+          )}
+          <MetricCard
+            label="Status"
+            value={evaluation.status}
+            hint={
+              evaluation.status === "completed"
+                ? "Judge and metrics both ran"
+                : "See the message below"
+            }
+          />
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-600 dark:text-slate-400">
               No scores were produced for this run.
             </p>
-          )}
-          <Badge variant={evaluation.status === "completed" ? "default" : "destructive"}>
-            {evaluation.status}
-          </Badge>
-        </CardContent>
-      </Card>
+            <Badge variant={evaluation.status === "completed" ? "default" : "destructive"}>
+              {evaluation.status}
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
 
       {evaluation.status === "failed" && evaluation.error_message && (
         <p
           role="alert"
           data-testid="evaluation-error"
-          className="border-destructive/30 bg-destructive/10 text-destructive rounded-xl border px-4 py-3 text-sm"
+          className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm"
         >
           This evaluation failed: {evaluation.error_message}
         </p>

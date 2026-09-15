@@ -5,7 +5,7 @@ import { QueryProvider } from "@/lib/query-provider";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-sans",
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
@@ -25,8 +25,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${plusJakartaSans.variable} ${geistMono.variable} antialiased`}>
+    // The font variables live on <html>, not <body>: globals.css applies
+    // `font-sans` to <html>, so the custom properties must be in scope there.
+    <html lang="en" className={`${plusJakartaSans.variable} ${geistMono.variable}`}>
+      <body className="antialiased">
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
         </QueryProvider>

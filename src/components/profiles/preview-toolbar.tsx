@@ -1,7 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { ZoomIn, ZoomOut } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "cn";
 
@@ -13,8 +12,9 @@ export type ZoomLevel = (typeof ZOOM_LEVELS)[number];
 export const DEFAULT_ZOOM: ZoomLevel = 1;
 
 /**
- * Utility bar above the resume canvas: zoom controls on the left, the
- * high-value export action on the right.
+ * The compact `[ − ] 100% [ + ]` control that sits under the resume sheet
+ * (blueprint §28). Export deliberately does NOT live here — it is the one
+ * strong CTA in the editor's contextual toolbar, so zoom stays quiet.
  *
  * Zoom is presentation-only — it scales the document surface in
  * `live-preview.tsx` and never touches the profile draft, so it can't
@@ -23,16 +23,10 @@ export const DEFAULT_ZOOM: ZoomLevel = 1;
 export function PreviewToolbar({
   zoom,
   onZoomChange,
-  isUpdating = false,
-  action,
   className,
 }: {
   zoom: ZoomLevel;
   onZoomChange: (zoom: ZoomLevel) => void;
-  /** Shows a quiet "Updating…" hint while a preview request is in flight. */
-  isUpdating?: boolean;
-  /** The primary export action, rendered as the toolbar's one strong button. */
-  action?: ReactNode;
   className?: string;
 }) {
   const index = ZOOM_LEVELS.indexOf(zoom);
@@ -48,46 +42,50 @@ export function PreviewToolbar({
     <div
       data-slot="preview-toolbar"
       className={cn(
-        "flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-white/80 px-4 py-3 backdrop-blur-md sm:px-5 dark:border-slate-800 dark:bg-slate-900/80",
+        "flex h-12 shrink-0 items-center justify-center gap-2 border-t border-slate-200/80 bg-white/85 px-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/85",
         className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex items-center gap-0.5 rounded-xl border border-slate-200/80 bg-slate-50/70 p-0.5 dark:border-slate-800 dark:bg-slate-950/40">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Zoom out"
-            disabled={!canZoomOut}
-            onClick={() => step(-1)}
-          >
-            <ZoomOut aria-hidden="true" />
-          </Button>
+      <div className="flex items-center gap-0.5 rounded-lg border border-slate-200/80 bg-slate-50/70 p-0.5 dark:border-slate-800 dark:bg-slate-950/40">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Zoom out"
+          disabled={!canZoomOut}
+          onClick={() => step(-1)}
+        >
+          <Minus aria-hidden="true" />
+        </Button>
 
-          <span
-            aria-live="polite"
-            className="min-w-14 text-center text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-300"
-          >
-            {Math.round(zoom * 100)}%
-          </span>
+        <span
+          aria-live="polite"
+          className="min-w-12 text-center text-xs font-semibold text-slate-700 tabular-nums dark:text-slate-300"
+        >
+          {Math.round(zoom * 100)}%
+        </span>
 
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Zoom in"
-            disabled={!canZoomIn}
-            onClick={() => step(1)}
-          >
-            <ZoomIn aria-hidden="true" />
-          </Button>
-        </div>
-
-        {isUpdating ? (
-          <span className="text-xs text-slate-500 dark:text-slate-400">Updating…</span>
-        ) : null}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Zoom in"
+          disabled={!canZoomIn}
+          onClick={() => step(1)}
+        >
+          <Plus aria-hidden="true" />
+        </Button>
       </div>
 
-      {action ? <div className="flex items-center gap-2">{action}</div> : null}
+      {/* Optional reset (blueprint §28) — only offered once it would do something. */}
+      {zoom !== DEFAULT_ZOOM ? (
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => onZoomChange(DEFAULT_ZOOM)}
+          aria-label="Fit page — reset zoom to 100%"
+        >
+          Fit
+        </Button>
+      ) : null}
     </div>
   );
 }
