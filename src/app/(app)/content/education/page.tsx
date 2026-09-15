@@ -123,7 +123,7 @@ function EducationRow({
 
   if (!editing) {
     return (
-      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
+      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-5 py-4">
         <div>
           <p className="text-muted-foreground text-xs">{id}</p>
           <p className="text-sm">{text}</p>
@@ -144,7 +144,7 @@ function EducationRow({
         await onSave(values.text);
         setEditing(false);
       })}
-      className="border-border flex items-start gap-2 rounded-lg border px-3 py-2"
+      className="border-border flex items-start gap-2 rounded-lg border px-5 py-4"
     >
       <div className="flex-1">
         <Textarea {...register("text")} />

@@ -36,7 +36,7 @@ export default function JdDetailPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Job description</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Job description</h1>
         <Button variant="outline" size="sm" onClick={() => router.push("/jds")}>
           Back to list
         </Button>
@@ -65,7 +65,7 @@ export default function JdDetailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <pre className="text-muted-foreground max-h-64 overflow-auto whitespace-pre-wrap text-xs">
+            <pre className="text-muted-foreground max-h-64 max-w-3xl overflow-auto text-sm leading-relaxed whitespace-pre-wrap">
               {jd.text}
             </pre>
           </CardContent>

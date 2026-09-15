@@ -126,7 +126,7 @@ function TaglineRow({
 
   if (!editing) {
     return (
-      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
+      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-5 py-4">
         <div>
           <p className="text-muted-foreground text-xs">{taglineKey}</p>
           <p className="text-sm">{text}</p>
@@ -147,7 +147,7 @@ function TaglineRow({
         await onSave(values.text);
         setEditing(false);
       })}
-      className="border-border flex items-start gap-2 rounded-lg border px-3 py-2"
+      className="border-border flex items-start gap-2 rounded-lg border px-5 py-4"
     >
       <div className="flex-1">
         <Textarea {...register("text")} />

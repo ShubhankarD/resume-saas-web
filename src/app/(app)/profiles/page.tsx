@@ -40,7 +40,7 @@ export default function ProfilesListPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Profiles</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Profiles</h1>
         <Button onClick={() => setShowCreateForm((v) => !v)} data-testid="new-profile-button">
           <Plus /> New profile
         </Button>

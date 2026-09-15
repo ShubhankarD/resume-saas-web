@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { getErrorMessage } from "@/lib/api/client";
 import { getMe, googleAuth, login } from "@/lib/auth/api";
 import { useAuthStore } from "@/lib/auth/store";
@@ -62,18 +63,16 @@ export default function LoginPage() {
           onSubmit={handleSubmit((values) => mutation.mutate(values))}
         >
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
+            <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" {...register("email")} />
             {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-medium">
+              <Label htmlFor="password" className="mb-0">
                 Password
-              </label>
+              </Label>
               <Link href="/forgot-password" className="text-muted-foreground text-xs underline">
                 Forgot password?
               </Link>

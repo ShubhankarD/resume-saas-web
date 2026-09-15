@@ -139,7 +139,7 @@ function SkillRow({
 
   if (!editing) {
     return (
-      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
+      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-5 py-4">
         <div>
           <p className="text-sm font-medium">
             {label} <span className="text-muted-foreground text-xs font-normal">({skillKey})</span>
@@ -162,7 +162,7 @@ function SkillRow({
         await onSave(values);
         setEditing(false);
       })}
-      className="border-border grid grid-cols-1 gap-2 rounded-lg border px-3 py-2 sm:grid-cols-[140px_1fr_auto_auto]"
+      className="border-border grid grid-cols-1 gap-2 rounded-lg border px-5 py-4 sm:grid-cols-[140px_1fr_auto_auto]"
     >
       <div>
         <Input {...register("label")} />

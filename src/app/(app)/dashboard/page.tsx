@@ -36,10 +36,12 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
           Welcome{user ? `, ${user.display_name}` : ""}
         </h1>
-        <p className="text-muted-foreground text-sm">Pick up where you left off.</p>
+        <p className="max-w-2xl text-sm leading-normal text-slate-500">
+          Pick up where you left off.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { getErrorMessage } from "@/lib/api/client";
 import { registerUser } from "@/lib/auth/api";
 
@@ -74,9 +75,7 @@ export default function RegisterPage() {
           onSubmit={handleSubmit((values) => mutation.mutate(values))}
         >
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="displayName" className="text-sm font-medium">
-              Name
-            </label>
+            <Label htmlFor="displayName">Name</Label>
             <Input id="displayName" autoComplete="name" {...register("displayName")} />
             {errors.displayName && (
               <p className="text-destructive text-xs">{errors.displayName.message}</p>
@@ -84,17 +83,13 @@ export default function RegisterPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
+            <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" {...register("email")} />
             {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
-            </label>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -107,9 +102,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="confirmPassword" className="text-sm font-medium">
-              Confirm password
-            </label>
+            <Label htmlFor="confirmPassword">Confirm password</Label>
             <Input
               id="confirmPassword"
               type="password"
