@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { useCuration, useCancelCuration } from "@/hooks/use-curations";
 import { useJobProgress } from "@/hooks/use-job-progress";
 import { curationStreamPath } from "@/lib/api/curations";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageToolbar } from "@/components/ui/page-toolbar";
+import { MetricCard } from "@/components/ui/metric-card";
 import { ErrorMessage } from "@/components/content/error-message";
 import { JobActivityFeed } from "@/components/jobs/job-activity-feed";
 
@@ -38,7 +40,6 @@ const NON_TERMINAL_STATUSES = new Set(["pending", "running"]);
  */
 export default function CurationDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const curationId = params.id;
   const { data: curation, isLoading, error } = useCuration(curationId);
   const cancelCuration = useCancelCuration(curationId);
@@ -57,22 +58,29 @@ export default function CurationDetailPage() {
   const canReview = curation?.status === "completed" && Boolean(curation.draft_profile_id);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Curation job</h1>
-        <Button variant="outline" size="sm" onClick={() => router.push("/curations")}>
-          Back to list
-        </Button>
-      </div>
-
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
-      <ErrorMessage error={error} />
-
-      {curation && (
-        <Card data-testid="curation-detail-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {curation.profile_name}
+    <div className="min-w-0 space-y-6">
+      <PageToolbar
+        className="-mx-4 -mt-5 w-auto px-4 md:-mx-6 md:-mt-6 md:px-6 lg:-mx-8 lg:px-8"
+        left={
+          <div className="flex min-w-0 items-center gap-2">
+            <Link
+              href="/curations"
+              aria-label="Back to curation jobs"
+              className="focus-visible:ring-ring/50 -ml-1 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+            </Link>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold tracking-[-0.01em] text-slate-900 sm:text-base dark:text-slate-50">
+                {curation?.profile_name ?? "Curation job"}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">AI curation</p>
+            </div>
+          </div>
+        }
+        right={
+          curation ? (
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               <Badge
                 data-testid="curation-status-badge"
                 variant={
@@ -85,48 +93,72 @@ export default function CurationDetailPage() {
               >
                 {curation.status}
               </Badge>
-            </CardTitle>
-            <CardDescription>
-              min score {curation.min_score} · max turns {curation.max_turns}
-              {curation.current_turn != null && ` · currently on turn ${curation.current_turn}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {curation.error_message && (
-              <p role="alert" className="text-destructive text-sm" data-testid="curation-error-message">
-                {curation.error_message}
-              </p>
-            )}
-            {curation.gate_warning && (
-              <p className="text-muted-foreground text-sm">{curation.gate_warning}</p>
-            )}
+              {isNonTerminal && (
+                <Button
+                  variant="outline"
+                  disabled={cancelCuration.isPending}
+                  onClick={() => cancelCuration.mutate()}
+                  data-testid="cancel-curation-button"
+                >
+                  {cancelCuration.isPending ? "Cancelling…" : "Cancel"}
+                </Button>
+              )}
+              {canReview && (
+                <Button
+                  nativeButton={false}
+                  variant="cta"
+                  render={<Link href={`/profiles/${curation.draft_profile_id}`} />}
+                  data-testid="review-draft-button"
+                >
+                  Review draft
+                </Button>
+              )}
+            </div>
+          ) : null
+        }
+      />
 
-            {isNonTerminal && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="self-start"
-                disabled={cancelCuration.isPending}
-                onClick={() => cancelCuration.mutate()}
-                data-testid="cancel-curation-button"
-              >
-                {cancelCuration.isPending ? "Cancelling…" : "Cancel"}
-              </Button>
-            )}
-            <ErrorMessage error={cancelCuration.error} />
+      <ErrorMessage error={error} />
+      <ErrorMessage error={cancelCuration.error} />
 
-            {canReview && (
-              <Button
-                nativeButton={false}
-                render={<Link href={`/profiles/${curation.draft_profile_id}`} />}
-                className="self-start"
-                data-testid="review-draft-button"
-              >
-                Review draft
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+      {isLoading && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-24 animate-pulse rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+            />
+          ))}
+        </div>
+      )}
+
+      {curation && (
+        <div data-testid="curation-detail-card" className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <MetricCard label="Minimum score" value={curation.min_score} />
+            <MetricCard
+              label="Turn"
+              value={curation.current_turn != null ? curation.current_turn : "—"}
+              hint={`of ${curation.max_turns} max`}
+            />
+            <MetricCard label="Status" value={curation.status} />
+          </div>
+
+          {curation.error_message && (
+            <p
+              role="alert"
+              className="text-destructive border-destructive/30 bg-destructive/10 rounded-lg border px-3 py-2 text-sm"
+              data-testid="curation-error-message"
+            >
+              {curation.error_message}
+            </p>
+          )}
+          {curation.gate_warning && (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+              {curation.gate_warning}
+            </p>
+          )}
+        </div>
       )}
 
       {(hasStreamed || events.length > 0) && (

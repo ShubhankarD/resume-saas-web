@@ -1,9 +1,6 @@
-import type {
-  JobProgressConnectionState,
-  JobProgressEvent,
-} from "@/hooks/use-job-progress";
+import type { JobProgressConnectionState, JobProgressEvent } from "@/hooks/use-job-progress";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 /**
  * Shared live-activity renderer for any job that publishes the backend's
@@ -30,14 +27,19 @@ export function JobActivityFeed({
   return (
     <Card data-testid="job-activity-feed">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-2">
-          <span>Agent activity</span>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+            Agent activity
+          </h2>
           <ConnectionBadge state={connectionState} />
-        </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="space-y-4">
         {connectionError && (
-          <p role="alert" className="text-destructive text-sm">
+          <p
+            role="alert"
+            className="text-destructive border-destructive/30 bg-destructive/10 rounded-lg border px-3 py-2 text-sm"
+          >
             {connectionError}
           </p>
         )}
@@ -45,24 +47,31 @@ export function JobActivityFeed({
         {latestScore && latestScore.type === "score" && (
           <div
             data-testid="job-activity-score"
-            className="border-border bg-muted/40 flex items-center gap-4 rounded-lg border px-3 py-2 text-sm"
+            className="flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-950"
           >
-            <span>
-              Overall score: <strong>{latestScore.overall_score}</strong>
-            </span>
-            <span>
-              Coverage: <strong>{latestScore.coverage_score}</strong>
-            </span>
+            <ScoreStat label="Overall" value={latestScore.overall_score} />
+            <ScoreStat label="Coverage" value={latestScore.coverage_score} />
           </div>
         )}
 
         {events.length === 0 && connectionState !== "error" && (
-          <p className="text-muted-foreground text-sm">Waiting for the agent to start…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Waiting for the agent to start…
+          </p>
         )}
 
-        <ol className="flex flex-col gap-2" data-testid="job-activity-events">
+        {/* A divided list rather than a stack of bordered boxes — §15 and
+            §23: one border level, whitespace does the rest of the work. */}
+        <ol
+          className="divide-y divide-slate-200 dark:divide-slate-800"
+          data-testid="job-activity-events"
+        >
           {events.map((event, i) => (
-            <li key={i} data-testid={`job-activity-event-${event.type}`}>
+            <li
+              key={i}
+              className="py-2.5 first:pt-0 last:pb-0"
+              data-testid={`job-activity-event-${event.type}`}
+            >
               <JobActivityEventRow event={event} />
             </li>
           ))}
@@ -72,53 +81,78 @@ export function JobActivityFeed({
   );
 }
 
+function ScoreStat({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="flex items-baseline gap-1.5">
+      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-base font-bold text-slate-900 tabular-nums dark:text-slate-50">
+        {value}
+      </span>
+    </span>
+  );
+}
+
 function JobActivityEventRow({ event }: { event: JobProgressEvent }) {
   switch (event.type) {
     case "tool_call":
       return (
-        <div className="border-border flex items-start gap-2 rounded-lg border px-3 py-2 text-sm">
-          <Badge variant="outline">turn {event.turn}</Badge>
-          <div className="flex flex-col">
-            <span className="font-medium">{event.name}</span>
-            <span className="text-muted-foreground text-xs break-all">{event.args_summary}</span>
+        <div className="flex items-start gap-2.5">
+          <Badge variant="outline" className="mt-0.5 shrink-0 tabular-nums">
+            turn {event.turn}
+          </Badge>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{event.name}</p>
+            <p className="text-xs break-all text-slate-500 dark:text-slate-400">
+              {event.args_summary}
+            </p>
           </div>
         </div>
       );
     case "score":
       return (
-        <div className="border-border flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-          <Badge variant="secondary">score</Badge>
-          <span>
+        <div className="flex items-center gap-2.5">
+          <Badge variant="secondary" className="shrink-0">
+            score
+          </Badge>
+          <span className="text-sm text-slate-600 tabular-nums dark:text-slate-400">
             overall {event.overall_score} · coverage {event.coverage_score}
           </span>
         </div>
       );
     case "completed":
       return (
-        <div className="border-primary/30 bg-primary/5 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-          <Badge>completed</Badge>
-          <span>Draft is ready to review.</span>
+        <div className="flex items-center gap-2.5">
+          <Badge className="shrink-0">completed</Badge>
+          <span className="text-sm text-slate-600 dark:text-slate-400">
+            Draft is ready to review.
+          </span>
         </div>
       );
     case "awaiting_review":
       return (
-        <div className="border-primary/30 bg-primary/5 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-          <Badge>awaiting review</Badge>
-          <span>{event.summary ?? "Ready for review."}</span>
+        <div className="flex items-center gap-2.5">
+          <Badge className="shrink-0">awaiting review</Badge>
+          <span className="text-sm text-slate-600 dark:text-slate-400">
+            {event.summary ?? "Ready for review."}
+          </span>
         </div>
       );
     case "failed":
       return (
-        <div className="border-destructive/30 bg-destructive/10 text-destructive flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-          <Badge variant="destructive">failed</Badge>
-          <span>{event.error}</span>
+        <div className="flex items-center gap-2.5">
+          <Badge variant="destructive" className="shrink-0">
+            failed
+          </Badge>
+          <span className="text-destructive text-sm">{event.error}</span>
         </div>
       );
     case "cancelled":
       return (
-        <div className="border-border bg-muted/40 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-          <Badge variant="secondary">cancelled</Badge>
-          <span>The job was cancelled.</span>
+        <div className="flex items-center gap-2.5">
+          <Badge variant="secondary" className="shrink-0">
+            cancelled
+          </Badge>
+          <span className="text-sm text-slate-600 dark:text-slate-400">The job was cancelled.</span>
         </div>
       );
   }
