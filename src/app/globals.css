@@ -13,7 +13,14 @@
  * match the source spec verbatim and stay easy to diff against it.
  */
 :root {
-  --background: 210 40% 98%; /* #F8FAFC - Canvas */
+  /*
+   * Surface hierarchy (blueprint §22). The canvas must sit visibly below
+   * the white card/panel surfaces: at the old #F8FAFC the canvas-to-card
+   * contrast was 1.046:1 — effectively identical — so cards read as flat
+   * regions defined only by their hairline border. slate-100 gives the
+   * white surfaces something to sit on while staying a light neutral.
+   */
+  --background: 210 40% 95%; /* #EEF2F7 - Canvas (Surface 1) */
   --foreground: 222 47% 11%; /* #0B1120 - Carbon Ink */
 
   --card: 0 0% 100%; /* #FFFFFF */
@@ -60,7 +67,9 @@
 }
 
 .dark {
-  --background: 222 47% 7%; /* #080D1A */
+  /* Deepened from 7%: against the 11% card the canvas measured only
+   * 1.081:1, shallower than light mode's 1.126:1. See the §22 note above. */
+  --background: 222 47% 4%; /* #05080F - Canvas (Surface 1) */
   --foreground: 210 40% 98%;
 
   --card: 222 47% 11%;
@@ -107,9 +116,19 @@
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  /*
+   * These must NOT be self-referential (`--font-sans: var(--font-sans)`):
+   * inside `@theme inline` that resolves against itself at `:root`, yielding
+   * an empty value, so `font-sans` produced an invalid font-family and the
+   * whole app fell back to the browser default serif. next/font therefore
+   * exposes its face under the role-named `--font-sans-face` (see
+   * src/app/layout.tsx), which we map here with a real system fallback.
+   */
+  --font-sans:
+    var(--font-sans-face), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading:
+    var(--font-sans-face), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --color-sidebar-ring: hsl(var(--sidebar-ring));
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));

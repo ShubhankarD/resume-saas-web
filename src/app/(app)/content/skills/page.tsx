@@ -1,17 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Search, Wrench } from "lucide-react";
 import { useContent, contentQueryKey } from "@/hooks/use-content";
 import { upsertSkill, deleteSkill } from "@/lib/api/content";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EditorCard } from "@/components/ui/editor-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormField } from "@/components/ui/form-field";
+import { PageHeader } from "@/components/ui/page-header";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
 import { ErrorMessage } from "@/components/content/error-message";
+import { ContentSkeleton, NoContentRecord } from "@/components/content/content-states";
 
 const createSchema = z.object({
   key: z
@@ -28,10 +34,27 @@ const editSchema = z.object({
 });
 type EditValues = z.infer<typeof editSchema>;
 
+/**
+ * A skill group's `text` is one freeform string on the backend
+ * (SkillGroupIn), so tokens are a *display* convenience only: we split on
+ * commas to show chips, and every edit still writes the whole string back
+ * unchanged in shape. Text without commas degrades to a single chip.
+ */
+function toTokens(text: string): string[] {
+  return text
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
 export default function SkillsPage() {
   const { data: content, isLoading, error } = useContent();
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: contentQueryKey });
+  const fieldId = useId();
+  const searchId = useId();
+  const [addOpen, setAddOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const upsertMutation = useMutation({
     mutationFn: ({ key, label, text }: { key: string; label: string; text: string }) =>
@@ -52,68 +75,197 @@ export default function SkillsPage() {
     resolver: zodResolver(createSchema),
   });
 
-  if (isLoading) return <p className="text-muted-foreground text-sm">Loading…</p>;
-  if (error) return <ErrorMessage error={error} />;
-  if (!content) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        You don&apos;t have a content record yet — go to Overview to create one first.
-      </p>
+  const entries = useMemo(() => Object.entries(content?.skills ?? {}), [content]);
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return entries;
+    return entries.filter(
+      ([key, group]) =>
+        key.toLowerCase().includes(query) ||
+        group.label.toLowerCase().includes(query) ||
+        group.text.toLowerCase().includes(query),
     );
-  }
+  }, [entries, search]);
 
-  const entries = Object.entries(content.skills);
+  const header = (action?: React.ReactNode) => (
+    <PageHeader
+      eyebrow="Content library"
+      title="Skills"
+      description="Skills grouped the way they read on a resume — a label, and the comma-separated skills behind it."
+      action={action}
+    />
+  );
+
+  if (isLoading)
+    return (
+      <div className="space-y-6">
+        {header()}
+        <ContentSkeleton rows={3} />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="space-y-6">
+        {header()}
+        <ErrorMessage error={error} />
+      </div>
+    );
+  if (!content)
+    return (
+      <div className="space-y-6">
+        {header()}
+        <NoContentRecord section="your skills" />
+      </div>
+    );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Skills</CardTitle>
-        <CardDescription>
-          Grouped skills — a key (e.g. &quot;cloud&quot;), a label shown on the resume, and the
-          skill text.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {entries.length === 0 && (
-          <p className="text-muted-foreground text-sm">No skill groups yet.</p>
-        )}
-        {entries.map(([key, group]) => (
-          <SkillRow
-            key={key}
-            skillKey={key}
-            label={group.label}
-            text={group.text}
-            onSave={(values) => upsertMutation.mutateAsync({ key, ...values })}
-            onDelete={() => deleteMutation.mutate(key)}
+    <div className="space-y-6">
+      {header(
+        <Sheet open={addOpen} onOpenChange={setAddOpen}>
+          <SheetTrigger
+            render={
+              <Button variant="cta">
+                <Plus aria-hidden="true" className="size-4" />
+                Add skill group
+              </Button>
+            }
           />
-        ))}
+          <SheetContent className="max-w-lg">
+            <SheetHeader>
+              <SheetTitle>Add a skill group</SheetTitle>
+            </SheetHeader>
+            <form
+              onSubmit={handleSubmit(async (values) => {
+                await upsertMutation.mutateAsync(values);
+                reset();
+                setAddOpen(false);
+              })}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  label="Key"
+                  htmlFor={`${fieldId}-key`}
+                  error={errors.key?.message}
+                  required
+                  hint="Lowercase letters, numbers, - or _"
+                >
+                  <Input
+                    id={`${fieldId}-key`}
+                    placeholder="cloud"
+                    aria-invalid={errors.key ? true : undefined}
+                    {...register("key")}
+                  />
+                </FormField>
 
-        <form
-          onSubmit={handleSubmit(async (values) => {
-            await upsertMutation.mutateAsync(values);
-            reset();
-          })}
-          className="border-border grid grid-cols-1 gap-2 rounded-lg border border-dashed p-3 sm:grid-cols-[100px_140px_1fr_auto]"
-        >
-          <div>
-            <Input placeholder="key" {...register("key")} />
-            {errors.key && <p className="text-destructive text-xs">{errors.key.message}</p>}
+                <FormField
+                  label="Label"
+                  htmlFor={`${fieldId}-label`}
+                  error={errors.label?.message}
+                  required
+                  hint="Shown on the resume."
+                >
+                  <Input
+                    id={`${fieldId}-label`}
+                    placeholder="Cloud & Infrastructure"
+                    aria-invalid={errors.label ? true : undefined}
+                    {...register("label")}
+                  />
+                </FormField>
+              </div>
+
+              <FormField
+                label="Skills"
+                htmlFor={`${fieldId}-text`}
+                error={errors.text?.message}
+                required
+                hint="Separate skills with commas."
+              >
+                <Input
+                  id={`${fieldId}-text`}
+                  placeholder="GCP, AWS, Terraform"
+                  aria-invalid={errors.text ? true : undefined}
+                  {...register("text")}
+                />
+              </FormField>
+
+              <ErrorMessage error={upsertMutation.error} />
+
+              <Button type="submit" variant="cta" disabled={isSubmitting}>
+                {isSubmitting ? "Adding…" : "Add skill group"}
+              </Button>
+            </form>
+          </SheetContent>
+        </Sheet>,
+      )}
+
+      {entries.length === 0 ? (
+        <EmptyState
+          icon={Wrench}
+          title="No skill groups yet"
+          description="Group related skills under a label so a resume can show the ones that fit the job."
+          action={
+            <Button variant="cta" onClick={() => setAddOpen(true)}>
+              <Plus aria-hidden="true" className="size-4" />
+              Add your first group
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-xs">
+              <label htmlFor={searchId} className="sr-only">
+                Search skills
+              </label>
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+              />
+              <Input
+                id={searchId}
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search skills…"
+                className="pl-9"
+              />
+            </div>
+            <p
+              aria-live="polite"
+              className="text-xs text-slate-500 tabular-nums dark:text-slate-400"
+            >
+              {filtered.length} of {entries.length} {entries.length === 1 ? "group" : "groups"}
+            </p>
           </div>
-          <div>
-            <Input placeholder="Label" {...register("label")} />
-            {errors.label && <p className="text-destructive text-xs">{errors.label.message}</p>}
-          </div>
-          <div>
-            <Input placeholder="GCP, AWS, Terraform" {...register("text")} />
-            {errors.text && <p className="text-destructive text-xs">{errors.text.message}</p>}
-          </div>
-          <Button type="submit" size="sm" disabled={isSubmitting} className="self-start">
-            {isSubmitting ? "Adding…" : "Add"}
-          </Button>
-        </form>
-        <ErrorMessage error={upsertMutation.error} />
-      </CardContent>
-    </Card>
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              title="No matching skill groups"
+              description="Nothing here matches that search — try a shorter term."
+              action={
+                <Button variant="outline" size="sm" onClick={() => setSearch("")}>
+                  Clear search
+                </Button>
+              }
+            />
+          ) : (
+            <div className="space-y-3">
+              {filtered.map(([key, group]) => (
+                <SkillRow
+                  key={key}
+                  skillKey={key}
+                  label={group.label}
+                  text={group.text}
+                  onSave={(values) => upsertMutation.mutateAsync({ key, ...values })}
+                  onDelete={() => deleteMutation.mutate(key)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -130,54 +282,86 @@ function SkillRow({
   onSave: (values: EditValues) => Promise<unknown>;
   onDelete: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const fieldId = useId();
+  const [saveError, setSaveError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<EditValues>({ resolver: zodResolver(editSchema), defaultValues: { label, text } });
 
-  if (!editing) {
-    return (
-      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-5 py-4">
-        <div>
-          <p className="text-sm font-medium">
-            {label} <span className="text-muted-foreground text-xs font-normal">({skillKey})</span>
-          </p>
-          <p className="text-muted-foreground text-sm">{text}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          <ConfirmDeleteButton label={`skill group ${label}`} onConfirm={onDelete} />
-        </div>
-      </div>
-    );
-  }
+  const tokens = toTokens(text);
 
   return (
-    <form
-      onSubmit={handleSubmit(async (values) => {
-        await onSave(values);
-        setEditing(false);
-      })}
-      className="border-border grid grid-cols-1 gap-2 rounded-lg border px-5 py-4 sm:grid-cols-[140px_1fr_auto_auto]"
+    <EditorCard
+      title={label}
+      subtitle={`${tokens.length} ${tokens.length === 1 ? "skill" : "skills"}`}
+      meta={skillKey}
+      actions={<ConfirmDeleteButton label={`skill group ${label}`} onConfirm={onDelete} />}
     >
-      <div>
-        <Input {...register("label")} />
-        {errors.label && <p className="text-destructive text-xs">{errors.label.message}</p>}
+      <div className="space-y-4">
+        {tokens.length > 0 && (
+          <ul className="flex flex-wrap gap-1.5">
+            {tokens.map((token, index) => (
+              <li
+                key={`${token}-${index}`}
+                className="inline-flex h-7 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300"
+              >
+                {token}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form
+          onSubmit={handleSubmit(async (values) => {
+            setSaveError(null);
+            try {
+              await onSave(values);
+            } catch (err) {
+              setSaveError(err);
+            }
+          })}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              label="Label"
+              htmlFor={`${fieldId}-label`}
+              error={errors.label?.message}
+              required
+            >
+              <Input
+                id={`${fieldId}-label`}
+                aria-invalid={errors.label ? true : undefined}
+                {...register("label")}
+              />
+            </FormField>
+
+            <FormField
+              label="Skills"
+              htmlFor={`${fieldId}-text`}
+              error={errors.text?.message}
+              required
+              hint="Separate skills with commas."
+            >
+              <Input
+                id={`${fieldId}-text`}
+                aria-invalid={errors.text ? true : undefined}
+                {...register("text")}
+              />
+            </FormField>
+          </div>
+
+          <ErrorMessage error={saveError} />
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSubmitting || !isDirty}>
+              {isSubmitting ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
+        </form>
       </div>
-      <div>
-        <Input {...register("text")} />
-        {errors.text && <p className="text-destructive text-xs">{errors.text.message}</p>}
-      </div>
-      <Button type="submit" size="sm" disabled={isSubmitting}>
-        Save
-      </Button>
-      <Button type="button" variant="outline" size="sm" onClick={() => setEditing(false)}>
-        Cancel
-      </Button>
-    </form>
+    </EditorCard>
   );
 }

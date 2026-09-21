@@ -1,18 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Quote } from "lucide-react";
 import { useContent, contentQueryKey } from "@/hooks/use-content";
+import { useProfiles } from "@/hooks/use-profiles";
 import { upsertTagline, deleteTagline } from "@/lib/api/content";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { EditorCard } from "@/components/ui/editor-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormField } from "@/components/ui/form-field";
+import { PageHeader } from "@/components/ui/page-header";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
 import { ErrorMessage } from "@/components/content/error-message";
+import { ContentSkeleton, NoContentRecord } from "@/components/content/content-states";
 
 const createSchema = z.object({
   key: z
@@ -26,8 +33,22 @@ const editSchema = z.object({ text: z.string().min(1, "Text is required").max(50
 
 export default function TaglinesPage() {
   const { data: content, isLoading, error } = useContent();
+  // Already-cached list query — a profile stores the tagline *key* it uses
+  // (ProfileSummary.tagline), so usage counts are a client-side tally, not a
+  // new endpoint. If profiles haven't loaded, the count is simply omitted.
+  const { data: profiles } = useProfiles();
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: contentQueryKey });
+  const fieldId = useId();
+  const [addOpen, setAddOpen] = useState(false);
+
+  const usageByKey = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const profile of profiles ?? []) {
+      counts.set(profile.tagline, (counts.get(profile.tagline) ?? 0) + 1);
+    }
+    return counts;
+  }, [profiles]);
 
   const upsertMutation = useMutation({
     mutationFn: ({ key, text }: { key: string; text: string }) => upsertTagline(key, { text }),
@@ -45,63 +66,128 @@ export default function TaglinesPage() {
     formState: { errors, isSubmitting },
   } = useForm<{ key: string; text: string }>({ resolver: zodResolver(createSchema) });
 
-  if (isLoading) return <p className="text-muted-foreground text-sm">Loading…</p>;
-  if (error) return <ErrorMessage error={error} />;
-  if (!content) {
+  const header = (action?: React.ReactNode) => (
+    <PageHeader
+      eyebrow="Content library"
+      title="Taglines"
+      description="Short positioning statements, keyed by name. A tailored resume picks one to sit under your name."
+      action={action}
+    />
+  );
+
+  if (isLoading)
     return (
-      <p className="text-muted-foreground text-sm">
-        You don&apos;t have a content record yet — go to Overview to create one first.
-      </p>
+      <div className="space-y-6">
+        {header()}
+        <ContentSkeleton rows={3} />
+      </div>
     );
-  }
+  if (error)
+    return (
+      <div className="space-y-6">
+        {header()}
+        <ErrorMessage error={error} />
+      </div>
+    );
+  if (!content)
+    return (
+      <div className="space-y-6">
+        {header()}
+        <NoContentRecord section="your taglines" />
+      </div>
+    );
 
   const entries = Object.entries(content.taglines);
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Taglines</CardTitle>
-          <CardDescription>
-            Short one-line positioning statements, keyed by name (e.g. &quot;default&quot;).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {entries.length === 0 && (
-            <p className="text-muted-foreground text-sm">No taglines yet.</p>
-          )}
+    <div className="space-y-6">
+      {header(
+        <Sheet open={addOpen} onOpenChange={setAddOpen}>
+          <SheetTrigger
+            render={
+              <Button variant="cta">
+                <Plus aria-hidden="true" className="size-4" />
+                Add tagline
+              </Button>
+            }
+          />
+          <SheetContent className="max-w-lg">
+            <SheetHeader>
+              <SheetTitle>Add a tagline</SheetTitle>
+            </SheetHeader>
+            <form
+              onSubmit={handleSubmit(async (values) => {
+                await upsertMutation.mutateAsync(values);
+                reset();
+                setAddOpen(false);
+              })}
+              className="space-y-4"
+            >
+              <FormField
+                label="Key"
+                htmlFor={`${fieldId}-key`}
+                error={errors.key?.message}
+                required
+                hint="Lowercase letters, numbers, - or _ — e.g. “default”."
+              >
+                <Input
+                  id={`${fieldId}-key`}
+                  placeholder="default"
+                  aria-invalid={errors.key ? true : undefined}
+                  {...register("key")}
+                />
+              </FormField>
+
+              <FormField
+                label="Tagline"
+                htmlFor={`${fieldId}-text`}
+                error={errors.text?.message}
+                required
+              >
+                <Textarea
+                  id={`${fieldId}-text`}
+                  placeholder="Cloud platform engineer who turns migrations into products."
+                  aria-invalid={errors.text ? true : undefined}
+                  {...register("text")}
+                />
+              </FormField>
+
+              <ErrorMessage error={upsertMutation.error} />
+
+              <Button type="submit" variant="cta" disabled={isSubmitting}>
+                {isSubmitting ? "Adding…" : "Add tagline"}
+              </Button>
+            </form>
+          </SheetContent>
+        </Sheet>,
+      )}
+
+      {entries.length === 0 ? (
+        <EmptyState
+          icon={Quote}
+          title="No taglines yet"
+          description="A tagline is the one-line summary under your name — write a general one, then variants."
+          action={
+            <Button variant="cta" onClick={() => setAddOpen(true)}>
+              <Plus aria-hidden="true" className="size-4" />
+              Add your first tagline
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-3">
           {entries.map(([key, text]) => (
             <TaglineRow
               key={key}
               taglineKey={key}
               text={text}
+              usedIn={profiles ? (usageByKey.get(key) ?? 0) : undefined}
               onSave={(newText) => upsertMutation.mutateAsync({ key, text: newText })}
               onDelete={() => deleteMutation.mutate(key)}
             />
           ))}
-
-          <form
-            onSubmit={handleSubmit(async (values) => {
-              await upsertMutation.mutateAsync(values);
-              reset();
-            })}
-            className="border-border flex flex-col gap-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-start"
-          >
-            <div>
-              <Input placeholder="key" className="sm:w-32" {...register("key")} />
-              {errors.key && <p className="text-destructive text-xs">{errors.key.message}</p>}
-            </div>
-            <div className="flex-1">
-              <Textarea placeholder="Tagline text" {...register("text")} />
-              {errors.text && <p className="text-destructive text-xs">{errors.text.message}</p>}
-            </div>
-            <Button type="submit" size="sm" disabled={isSubmitting}>
-              {isSubmitting ? "Adding…" : "Add"}
-            </Button>
-          </form>
-          <ErrorMessage error={upsertMutation.error} />
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -109,56 +195,62 @@ export default function TaglinesPage() {
 function TaglineRow({
   taglineKey,
   text,
+  usedIn,
   onSave,
   onDelete,
 }: {
   taglineKey: string;
   text: string;
+  /** Number of resume profiles referencing this key; omitted while unknown. */
+  usedIn?: number;
   onSave: (text: string) => Promise<unknown>;
   onDelete: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const fieldId = useId();
+  const [saveError, setSaveError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<{ text: string }>({ resolver: zodResolver(editSchema), defaultValues: { text } });
 
-  if (!editing) {
-    return (
-      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-5 py-4">
-        <div>
-          <p className="text-muted-foreground text-xs">{taglineKey}</p>
-          <p className="text-sm">{text}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          <ConfirmDeleteButton label={`tagline ${taglineKey}`} onConfirm={onDelete} />
-        </div>
-      </div>
-    );
-  }
+  const meta =
+    usedIn === undefined ? undefined : `Used in ${usedIn} ${usedIn === 1 ? "resume" : "resumes"}`;
 
   return (
-    <form
-      onSubmit={handleSubmit(async (values) => {
-        await onSave(values.text);
-        setEditing(false);
-      })}
-      className="border-border flex items-start gap-2 rounded-lg border px-5 py-4"
+    <EditorCard
+      title={text}
+      subtitle={taglineKey}
+      meta={meta}
+      actions={<ConfirmDeleteButton label={`tagline ${taglineKey}`} onConfirm={onDelete} />}
     >
-      <div className="flex-1">
-        <Textarea {...register("text")} />
-        {errors.text && <p className="text-destructive text-xs">{errors.text.message}</p>}
-      </div>
-      <Button type="submit" size="sm" disabled={isSubmitting}>
-        Save
-      </Button>
-      <Button type="button" variant="outline" size="sm" onClick={() => setEditing(false)}>
-        Cancel
-      </Button>
-    </form>
+      <form
+        onSubmit={handleSubmit(async (values) => {
+          setSaveError(null);
+          try {
+            await onSave(values.text);
+          } catch (err) {
+            setSaveError(err);
+          }
+        })}
+        className="space-y-4"
+      >
+        <FormField label="Tagline" htmlFor={fieldId} error={errors.text?.message} required>
+          <Textarea
+            id={fieldId}
+            aria-invalid={errors.text ? true : undefined}
+            {...register("text")}
+          />
+        </FormField>
+
+        <ErrorMessage error={saveError} />
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isSubmitting || !isDirty}>
+            {isSubmitting ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
+      </form>
+    </EditorCard>
   );
 }
