@@ -10,6 +10,7 @@ import {
   Briefcase,
   ClipboardCheck,
   Sparkles,
+  SendHorizontal,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/jds", label: "Job descriptions", icon: Briefcase },
   { href: "/evaluations", label: "Evaluations", icon: ClipboardCheck },
   { href: "/curations", label: "AI curation", icon: Sparkles },
+  { href: "/applications", label: "Apply", icon: SendHorizontal },
 ];
 
 /**
@@ -39,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
  * restrained but unmistakable active state, and explicitly rules out putting
  * an outline around every row. Selection is never signalled by colour alone:
  * the active row also carries `aria-current="page"` and a heavier weight.
- * Only six destinations exist, so the optional OVERVIEW/CONTENT/TOOLS group
+ * Only seven destinations exist, so the optional OVERVIEW/CONTENT/TOOLS group
  * labels from §7 are skipped — at this length they are pure noise.
  */
 export function SidebarNav({
