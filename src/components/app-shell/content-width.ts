@@ -23,7 +23,14 @@ export const CONTENT_WIDTH_CLASS: Record<ContentWidth, string> = {
 };
 
 /** Routes whose top level is a data view rather than a form or document. */
-const WIDE_ROUTES = new Set(["/dashboard", "/profiles", "/jds", "/evaluations", "/content"]);
+const WIDE_ROUTES = new Set([
+  "/dashboard",
+  "/profiles",
+  "/jds",
+  "/evaluations",
+  "/content",
+  "/curations",
+]);
 
 export function contentWidthFor(pathname: string): ContentWidth {
   // Detail routes first — they are more specific than their list parents.
@@ -31,6 +38,7 @@ export function contentWidthFor(pathname: string): ContentWidth {
   if (pathname.startsWith("/jds/")) return "default"; // reading a posting
   if (pathname.startsWith("/evaluations/")) return "default"; // reading results
   if (pathname.startsWith("/content/")) return "default"; // section editors
+  if (pathname.startsWith("/curations/")) return "default"; // one job's activity feed
 
   return WIDE_ROUTES.has(pathname) ? "wide" : "default";
 }
