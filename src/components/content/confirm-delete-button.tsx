@@ -32,13 +32,14 @@ export function ConfirmDeleteButton({
         render={
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             aria-label={`Delete ${label}`}
             disabled={disabled}
+            className="text-slate-400 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
           />
         }
       >
-        <Trash2 className="text-destructive size-3.5" />
+        <Trash2 aria-hidden="true" className="size-4" />
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

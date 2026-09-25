@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { MetricCard } from "@/components/ui/metric-card";
 import type { EvaluationResponse } from "@/lib/api/evaluations";
 
 /**
@@ -91,31 +92,38 @@ function coverageBadgeVariant(status: string): "default" | "secondary" | "destru
 }
 
 function DeterministicSection({ deterministic }: { deterministic: DeterministicMetrics }) {
-  const { page_fit, style_compliance, xyz_format, duplicate_bullets, tag_coverage } =
-    deterministic;
+  const { page_fit, style_compliance, xyz_format, duplicate_bullets, tag_coverage } = deterministic;
   return (
     <Card data-testid="deterministic-metrics">
       <CardHeader>
         <CardTitle>Deterministic metrics</CardTitle>
         <CardDescription>$0, instant — no LLM call involved.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 text-sm">
+      <CardContent className="space-y-5 text-sm">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-muted-foreground text-xs">Page count</span>
-            <span className="text-base font-semibold">{page_fit.page_count}</span>
+          <div className="space-y-1">
+            <span className="block text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+              Page count
+            </span>
+            <span className="text-lg font-semibold tabular-nums">{page_fit.page_count}</span>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-muted-foreground text-xs">Fill</span>
-            <span className="text-base font-semibold">{page_fit.fill_pct}%</span>
+          <div className="space-y-1">
+            <span className="block text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+              Fill
+            </span>
+            <span className="text-lg font-semibold tabular-nums">{page_fit.fill_pct}%</span>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-muted-foreground text-xs">Underfilled</span>
-            <span className="text-base font-semibold">{page_fit.underfilled ? "Yes" : "No"}</span>
+          <div className="space-y-1">
+            <span className="block text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+              Underfilled
+            </span>
+            <span className="text-lg font-semibold">{page_fit.underfilled ? "Yes" : "No"}</span>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-muted-foreground text-xs">Tag coverage</span>
-            <span className="text-base font-semibold">
+          <div className="space-y-1">
+            <span className="block text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+              Tag coverage
+            </span>
+            <span className="text-lg font-semibold tabular-nums">
               {tag_coverage.matched.length}/{tag_coverage.tags_total} (
               {Math.round(tag_coverage.ratio * 100)}%)
             </span>
@@ -124,13 +132,13 @@ function DeterministicSection({ deterministic }: { deterministic: DeterministicM
 
         <Separator />
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <span className="font-medium">
             Style compliance ({style_compliance.bullets_total} bullets)
           </span>
           {style_compliance.over_word_limit.length === 0 &&
           style_compliance.multi_bold.length === 0 ? (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
               Every bullet is within the word limit with at most one bolded phrase.
             </p>
           ) : (
@@ -149,12 +157,12 @@ function DeterministicSection({ deterministic }: { deterministic: DeterministicM
           )}
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <span className="font-medium">
             XYZ/CAR front-loading ({xyz_format.bullets_with_bold} bullets checked)
           </span>
           {xyz_format.back_loaded.length === 0 ? (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
               Every bolded metric is front-loaded in its bullet.
             </p>
           ) : (
@@ -169,10 +177,12 @@ function DeterministicSection({ deterministic }: { deterministic: DeterministicM
           )}
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <span className="font-medium">Duplicate bullets</span>
           {duplicate_bullets.length === 0 ? (
-            <p className="text-muted-foreground text-xs">No near-duplicate bullets detected.</p>
+            <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+              No near-duplicate bullets detected.
+            </p>
           ) : (
             <ul className="text-muted-foreground list-inside list-disc text-xs">
               {duplicate_bullets.map((w, i) => (
@@ -193,12 +203,16 @@ function DeterministicSection({ deterministic }: { deterministic: DeterministicM
 
 function AxisScore({ label, axis }: { label: string; axis: ScoredAxis }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <span className="text-muted-foreground text-xs">{label}</span>
-        <Badge variant="secondary">{axis.score}/10</Badge>
+        <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+          {label}
+        </span>
+        <Badge variant="secondary" className="tabular-nums">
+          {axis.score}/10
+        </Badge>
       </div>
-      <p className="text-xs">{axis.reason}</p>
+      <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">{axis.reason}</p>
     </div>
   );
 }
@@ -208,10 +222,12 @@ function JudgeSection({ report }: { report: JudgeReport }) {
     <Card data-testid="judge-feedback">
       <CardHeader>
         <CardTitle>LLM-judge feedback</CardTitle>
-        <CardDescription>Structured feedback from the evaluation&apos;s judge call.</CardDescription>
+        <CardDescription>
+          Structured feedback from the evaluation&apos;s judge call.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 text-sm">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <CardContent className="space-y-5 text-sm">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <AxisScore label="Technical fit" axis={report.technical_fit} />
           <AxisScore label="Seniority fit" axis={report.seniority_fit} />
           <AxisScore label="Domain fit" axis={report.domain_fit} />
@@ -220,10 +236,12 @@ function JudgeSection({ report }: { report: JudgeReport }) {
         <Separator />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <span className="font-medium">Strengths</span>
             {report.strengths.length === 0 ? (
-              <p className="text-muted-foreground text-xs">None called out.</p>
+              <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+                None called out.
+              </p>
             ) : (
               <ul className="list-inside list-disc text-xs">
                 {report.strengths.map((s, i) => (
@@ -232,10 +250,12 @@ function JudgeSection({ report }: { report: JudgeReport }) {
               </ul>
             )}
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <span className="font-medium">Gaps</span>
             {report.gaps.length === 0 ? (
-              <p className="text-muted-foreground text-xs">None called out.</p>
+              <p className="text-xs leading-5 text-slate-600 dark:text-slate-400">
+                None called out.
+              </p>
             ) : (
               <ul className="list-inside list-disc text-xs">
                 {report.gaps.map((g, i) => (
@@ -246,13 +266,13 @@ function JudgeSection({ report }: { report: JudgeReport }) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <span className="font-medium">Recommendation</span>
           <p className="text-xs">{report.recommendation}</p>
         </div>
 
         {report.unverifiable_claims.length > 0 && (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <span className="font-medium">Unverifiable claims (flagged for human review)</span>
             <ul className="list-inside list-disc text-xs">
               {report.unverifiable_claims.map((c, i) => (
@@ -263,7 +283,7 @@ function JudgeSection({ report }: { report: JudgeReport }) {
         )}
 
         {report.incoherent_bullets.length > 0 && (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <span className="font-medium">Bullets that read as incoherent in this order</span>
             <ul className="list-inside list-disc text-xs">
               {report.incoherent_bullets.map((b, i) => (
@@ -275,7 +295,7 @@ function JudgeSection({ report }: { report: JudgeReport }) {
           </div>
         )}
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <span className="font-medium">Requirement coverage</span>
           <ul className="flex flex-col gap-1">
             {report.requirement_coverage.map((c, i) => (
@@ -304,32 +324,56 @@ function JudgeSection({ report }: { report: JudgeReport }) {
 export function EvaluationResults({ evaluation }: { evaluation: EvaluationResponse }) {
   const deterministic = evaluation.deterministic as unknown as DeterministicMetrics | null;
   const llmReport = evaluation.llm_report as unknown as JudgeReport | null;
+  const hasScores = evaluation.overall_score != null || evaluation.coverage_score != null;
 
   return (
-    <div className="flex flex-col gap-4" data-testid="evaluation-results">
-      <div className="flex flex-wrap items-center gap-3">
-        <Badge variant={evaluation.status === "completed" ? "default" : "destructive"}>
-          {evaluation.status}
-        </Badge>
-        {evaluation.overall_score != null && (
-          <span className="text-base font-semibold">
-            Overall score: {evaluation.overall_score}/10
-          </span>
-        )}
-        {evaluation.coverage_score != null && (
-          <span className="text-muted-foreground text-sm">
-            Coverage: {evaluation.coverage_score}/10
-          </span>
-        )}
-      </div>
+    <div className="space-y-4" data-testid="evaluation-results">
+      {hasScores ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {evaluation.overall_score != null && (
+            <MetricCard
+              label="Overall fit"
+              value={`${evaluation.overall_score}/10`}
+              progress={evaluation.overall_score * 10}
+            />
+          )}
+          {evaluation.coverage_score != null && (
+            <MetricCard
+              label="Requirement coverage"
+              value={`${evaluation.coverage_score}/10`}
+              progress={evaluation.coverage_score * 10}
+            />
+          )}
+          <MetricCard
+            label="Status"
+            value={evaluation.status}
+            hint={
+              evaluation.status === "completed"
+                ? "Judge and metrics both ran"
+                : "See the message below"
+            }
+          />
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              No scores were produced for this run.
+            </p>
+            <Badge variant={evaluation.status === "completed" ? "default" : "destructive"}>
+              {evaluation.status}
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
 
       {evaluation.status === "failed" && evaluation.error_message && (
         <p
           role="alert"
           data-testid="evaluation-error"
-          className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
+          className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm"
         >
-          Evaluation failed: {evaluation.error_message}
+          This evaluation failed: {evaluation.error_message}
         </p>
       )}
 

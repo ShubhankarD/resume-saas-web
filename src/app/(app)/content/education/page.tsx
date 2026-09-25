@@ -1,18 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { GraduationCap, Plus } from "lucide-react";
 import { useContent, contentQueryKey } from "@/hooks/use-content";
 import { upsertEducation, deleteEducation } from "@/lib/api/content";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { EditorCard } from "@/components/ui/editor-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormField } from "@/components/ui/form-field";
+import { PageHeader } from "@/components/ui/page-header";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
 import { ErrorMessage } from "@/components/content/error-message";
+import { ContentSkeleton, NoContentRecord } from "@/components/content/content-states";
 
 const createSchema = z.object({
   id: z
@@ -28,6 +34,8 @@ export default function EducationPage() {
   const { data: content, isLoading, error } = useContent();
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: contentQueryKey });
+  const fieldId = useId();
+  const [addOpen, setAddOpen] = useState(false);
 
   const upsertMutation = useMutation({
     mutationFn: ({ id, text }: { id: string; text: string }) => upsertEducation(id, { text }),
@@ -45,61 +53,126 @@ export default function EducationPage() {
     formState: { errors, isSubmitting },
   } = useForm<{ id: string; text: string }>({ resolver: zodResolver(createSchema) });
 
-  if (isLoading) return <p className="text-muted-foreground text-sm">Loading…</p>;
-  if (error) return <ErrorMessage error={error} />;
-  if (!content) {
+  const header = (action?: React.ReactNode) => (
+    <PageHeader
+      eyebrow="Content library"
+      title="Education"
+      description="Degrees, certifications, and training. Each entry has its own id so resumes can reference it directly."
+      action={action}
+    />
+  );
+
+  if (isLoading)
     return (
-      <p className="text-muted-foreground text-sm">
-        You don&apos;t have a content record yet — go to Overview to create one first.
-      </p>
+      <div className="space-y-6">
+        {header()}
+        <ContentSkeleton rows={3} />
+      </div>
     );
-  }
+  if (error)
+    return (
+      <div className="space-y-6">
+        {header()}
+        <ErrorMessage error={error} />
+      </div>
+    );
+  if (!content)
+    return (
+      <div className="space-y-6">
+        {header()}
+        <NoContentRecord section="your education" />
+      </div>
+    );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Education</CardTitle>
-        <CardDescription>A flat list of education entries, each with its own id.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {content.education.length === 0 && (
-          <p className="text-muted-foreground text-sm">No education entries yet.</p>
-        )}
-        {content.education.map((entry) => (
-          <EducationRow
-            key={entry.id}
-            id={entry.id}
-            text={entry.text}
-            onSave={(text) => upsertMutation.mutateAsync({ id: entry.id, text })}
-            onDelete={() => deleteMutation.mutate(entry.id)}
+    <div className="space-y-6">
+      {header(
+        <Sheet open={addOpen} onOpenChange={setAddOpen}>
+          <SheetTrigger
+            render={
+              <Button variant="cta">
+                <Plus aria-hidden="true" className="size-4" />
+                Add entry
+              </Button>
+            }
           />
-        ))}
+          <SheetContent className="max-w-lg">
+            <SheetHeader>
+              <SheetTitle>Add an education entry</SheetTitle>
+            </SheetHeader>
+            <form
+              onSubmit={handleSubmit(async (values) => {
+                await upsertMutation.mutateAsync(values);
+                reset();
+                setAddOpen(false);
+              })}
+              className="space-y-4"
+            >
+              <FormField
+                label="Entry id"
+                htmlFor={`${fieldId}-id`}
+                error={errors.id?.message}
+                required
+                hint="Lowercase letters, numbers, - or _ — e.g. “bs-cs”."
+              >
+                <Input
+                  id={`${fieldId}-id`}
+                  placeholder="bs-cs"
+                  aria-invalid={errors.id ? true : undefined}
+                  {...register("id")}
+                />
+              </FormField>
 
-        <form
-          onSubmit={handleSubmit(async (values) => {
-            await upsertMutation.mutateAsync(values);
-            reset();
-          })}
-          className="border-border flex flex-col gap-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-start"
-        >
-          <div>
-            <Input placeholder="id" className="sm:w-32" {...register("id")} />
-            {errors.id && <p className="text-destructive text-xs">{errors.id.message}</p>}
-          </div>
-          <div className="flex-1">
-            <Textarea
-              placeholder="BS Computer Science, Somewhere University"
-              {...register("text")}
+              <FormField
+                label="Entry"
+                htmlFor={`${fieldId}-text`}
+                error={errors.text?.message}
+                required
+              >
+                <Textarea
+                  id={`${fieldId}-text`}
+                  placeholder="BS Computer Science, Somewhere University"
+                  aria-invalid={errors.text ? true : undefined}
+                  {...register("text")}
+                />
+              </FormField>
+
+              <ErrorMessage error={upsertMutation.error} />
+
+              <Button type="submit" variant="cta" disabled={isSubmitting}>
+                {isSubmitting ? "Adding…" : "Add entry"}
+              </Button>
+            </form>
+          </SheetContent>
+        </Sheet>,
+      )}
+
+      {content.education.length === 0 ? (
+        <EmptyState
+          icon={GraduationCap}
+          title="No education added yet"
+          description="Add a degree, bootcamp, or certification to make it available to a resume."
+          action={
+            <Button variant="cta" onClick={() => setAddOpen(true)}>
+              <Plus aria-hidden="true" className="size-4" />
+              Add your first entry
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-3">
+          {content.education.map((entry) => (
+            <EducationRow
+              key={entry.id}
+              id={entry.id}
+              text={entry.text}
+              onSave={(text) => upsertMutation.mutateAsync({ id: entry.id, text })}
+              onDelete={() => deleteMutation.mutate(entry.id)}
             />
-            {errors.text && <p className="text-destructive text-xs">{errors.text.message}</p>}
-          </div>
-          <Button type="submit" size="sm" disabled={isSubmitting}>
-            {isSubmitting ? "Adding…" : "Add"}
-          </Button>
-        </form>
-        <ErrorMessage error={upsertMutation.error} />
-      </CardContent>
-    </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -114,48 +187,47 @@ function EducationRow({
   onSave: (text: string) => Promise<unknown>;
   onDelete: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const fieldId = useId();
+  const [saveError, setSaveError] = useState<unknown>(null);
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<{ text: string }>({ resolver: zodResolver(editSchema), defaultValues: { text } });
 
-  if (!editing) {
-    return (
-      <div className="border-border flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
-        <div>
-          <p className="text-muted-foreground text-xs">{id}</p>
-          <p className="text-sm">{text}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          <ConfirmDeleteButton label={`education entry ${id}`} onConfirm={onDelete} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <form
-      onSubmit={handleSubmit(async (values) => {
-        await onSave(values.text);
-        setEditing(false);
-      })}
-      className="border-border flex items-start gap-2 rounded-lg border px-3 py-2"
+    <EditorCard
+      title={text}
+      meta={id}
+      actions={<ConfirmDeleteButton label={`education entry ${id}`} onConfirm={onDelete} />}
     >
-      <div className="flex-1">
-        <Textarea {...register("text")} />
-        {errors.text && <p className="text-destructive text-xs">{errors.text.message}</p>}
-      </div>
-      <Button type="submit" size="sm" disabled={isSubmitting}>
-        Save
-      </Button>
-      <Button type="button" variant="outline" size="sm" onClick={() => setEditing(false)}>
-        Cancel
-      </Button>
-    </form>
+      <form
+        onSubmit={handleSubmit(async (values) => {
+          setSaveError(null);
+          try {
+            await onSave(values.text);
+          } catch (err) {
+            setSaveError(err);
+          }
+        })}
+        className="space-y-4"
+      >
+        <FormField label="Entry" htmlFor={fieldId} error={errors.text?.message} required>
+          <Textarea
+            id={fieldId}
+            aria-invalid={errors.text ? true : undefined}
+            {...register("text")}
+          />
+        </FormField>
+
+        <ErrorMessage error={saveError} />
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isSubmitting || !isDirty}>
+            {isSubmitting ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
+      </form>
+    </EditorCard>
   );
 }

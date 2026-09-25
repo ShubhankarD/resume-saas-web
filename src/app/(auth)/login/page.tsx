@@ -9,11 +9,12 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { getErrorMessage } from "@/lib/api/client";
 import { getMe, googleAuth, login } from "@/lib/auth/api";
 import { useAuthStore } from "@/lib/auth/store";
 import { storeTokens } from "@/lib/auth/token-storage";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { GoogleSignInButton, isGoogleSignInConfigured } from "@/components/auth/GoogleSignInButton";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -58,22 +59,20 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <form
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-5"
           onSubmit={handleSubmit((values) => mutation.mutate(values))}
         >
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
+            <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" {...register("email")} />
             {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-medium">
+              <Label htmlFor="password" className="mb-0">
                 Password
-              </label>
+              </Label>
               <Link href="/forgot-password" className="text-muted-foreground text-xs underline">
                 Forgot password?
               </Link>
@@ -100,20 +99,24 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="my-4 flex items-center gap-3">
-          <div className="bg-border h-px flex-1" />
-          <span className="text-muted-foreground text-xs">or</span>
-          <div className="bg-border h-px flex-1" />
-        </div>
+        {isGoogleSignInConfigured() && (
+          <>
+            <div className="my-4 flex items-center gap-3">
+              <div className="bg-border h-px flex-1" />
+              <span className="text-muted-foreground text-xs">or</span>
+              <div className="bg-border h-px flex-1" />
+            </div>
 
-        <GoogleSignInButton
-          onIdToken={(idToken) => googleMutation.mutate(idToken)}
-          disabled={googleMutation.isPending}
-        />
-        {googleMutation.isError && (
-          <p className="text-destructive mt-2 text-sm">
-            {getErrorMessage(googleMutation.error, "Google sign-in failed")}
-          </p>
+            <GoogleSignInButton
+              onIdToken={(idToken) => googleMutation.mutate(idToken)}
+              disabled={googleMutation.isPending}
+            />
+            {googleMutation.isError && (
+              <p className="text-destructive mt-2 text-sm">
+                {getErrorMessage(googleMutation.error, "Google sign-in failed")}
+              </p>
+            )}
+          </>
         )}
 
         <p className="text-muted-foreground mt-4 text-center text-sm">

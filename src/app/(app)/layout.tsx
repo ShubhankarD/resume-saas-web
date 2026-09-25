@@ -1,12 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/auth/store";
 import { useLogout } from "@/lib/auth/use-logout";
-import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
+import { AppHeader } from "@/components/app-shell/app-header";
+import { SidebarNav } from "@/components/app-shell/sidebar-nav";
+import { CONTENT_WIDTH_CLASS, contentWidthFor } from "@/components/app-shell/content-width";
+import { cn } from "cn";
 
 /**
  * Protected app shell. Auth status lives client-side only (the access token
@@ -15,12 +17,19 @@ import { Wordmark } from "@/components/wordmark";
  * has resolved the session as "unauthenticated." While the session is still
  * being checked (silent refresh in flight), it shows a brief loading state
  * rather than flashing protected content or redirecting prematurely.
+ *
+ * Composition follows spec §5: a full-width 56px application header above a
+ * 240px sidebar and the main workspace. The page canvas is the light neutral
+ * Surface 1 (§22); header and sidebar are Surface 2 panels separated by hairline
+ * borders rather than shadows (§24).
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const status = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -30,47 +39,79 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (status !== "authenticated") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p data-testid="app-shell-checking" className="text-muted-foreground text-sm">
-          Checking your session…
-        </p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-5 px-6">
+        <Wordmark className="text-2xl" />
+        <div className="flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="size-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400"
+          />
+          <p data-testid="app-shell-checking" className="text-muted-foreground text-sm">
+            Checking your session…
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-border flex items-center justify-between border-b px-6 py-3">
-        <Link href="/dashboard">
-          <Wordmark className="text-lg" />
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/content" className="text-muted-foreground hover:text-foreground text-sm">
-            Content
-          </Link>
-          <Link href="/profiles" className="text-muted-foreground hover:text-foreground text-sm">
-            Profiles
-          </Link>
-          <Link href="/jds" className="text-muted-foreground hover:text-foreground text-sm">
-            Job descriptions
-          </Link>
-          <Link href="/evaluations" className="text-muted-foreground hover:text-foreground text-sm">
-            Evaluations
-          </Link>
-          <Link href="/curations" className="text-muted-foreground hover:text-foreground text-sm">
-            AI curation
-          </Link>
-          {user && (
-            <span data-testid="current-user" className="text-muted-foreground text-sm">
-              {user.display_name}
-            </span>
+    <div className="bg-background flex min-h-screen flex-col">
+      <AppHeader
+        displayName={user?.display_name}
+        email={user?.email}
+        collapsed={collapsed}
+        onToggleCollapsed={() => setCollapsed((c) => !c)}
+        onLogout={() => void logout()}
+      />
+
+      <div className="flex min-h-0 w-full flex-1">
+        <aside
+          aria-label="Sidebar"
+          className={cn(
+            "border-border bg-sidebar sticky top-14 hidden h-[calc(100svh-3.5rem)] shrink-0 flex-col justify-between border-r py-3 transition-[width] duration-200 md:flex",
+            collapsed ? "w-16 items-center px-3" : "w-60 px-3",
           )}
-          <Button variant="outline" size="sm" onClick={() => logout()}>
-            Log out
-          </Button>
+        >
+          <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+            <SidebarNav collapsed={collapsed} />
+          </div>
+
+          {user && (
+            <div className="border-border mt-3 shrink-0 border-t pt-3">
+              {collapsed ? (
+                <span data-testid="current-user" className="sr-only">
+                  {user.email}
+                </span>
+              ) : (
+                <div className="flex min-w-0 flex-col gap-0.5 px-3">
+                  <span className="text-foreground truncate text-sm font-medium">
+                    {user.display_name}
+                  </span>
+                  <span
+                    data-testid="current-user"
+                    className="text-muted-foreground truncate text-xs"
+                  >
+                    {user.email}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Width is chosen per route rather than globally — see
+              content-width.ts for why. */}
+          <main
+            className={cn(
+              "mx-auto w-full flex-1 space-y-6 px-4 py-5 md:px-6 md:py-6 lg:px-8",
+              CONTENT_WIDTH_CLASS[contentWidthFor(pathname)],
+            )}
+          >
+            {children}
+          </main>
         </div>
-      </header>
-      <main className="flex-1 p-6">{children}</main>
+      </div>
     </div>
   );
 }
