@@ -30,6 +30,7 @@ const WIDE_ROUTES = new Set([
   "/evaluations",
   "/content",
   "/curations",
+  "/applications",
 ]);
 
 export function contentWidthFor(pathname: string): ContentWidth {
@@ -39,6 +40,7 @@ export function contentWidthFor(pathname: string): ContentWidth {
   if (pathname.startsWith("/evaluations/")) return "default"; // reading results
   if (pathname.startsWith("/content/")) return "default"; // section editors
   if (pathname.startsWith("/curations/")) return "default"; // one job's activity feed
+  if (pathname.startsWith("/applications/")) return "full"; // the live VNC session
 
   return WIDE_ROUTES.has(pathname) ? "wide" : "default";
 }
