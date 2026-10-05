@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api/client";
+import { apiFetch, buildPath } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 
 /**
@@ -26,36 +26,32 @@ export type CurationResponse = components["schemas"]["CurationResponse"];
 export type CurationCreate = components["schemas"]["CurationCreate"];
 
 export async function listCurations(): Promise<CurationSummary[]> {
-  const data = await apiFetch("/api/v1/curations/", { method: "get" });
-  return data as unknown as CurationSummary[];
+  return apiFetch("/api/v1/curations/", { method: "get" });
 }
 
 export async function getCuration(curationId: string): Promise<CurationResponse> {
-  const data = await apiFetch(
-    `/api/v1/curations/${encodeURIComponent(curationId)}` as "/api/v1/curations/{curation_id}",
-    { method: "get" },
-  );
-  return data as unknown as CurationResponse;
+  return apiFetch("/api/v1/curations/{curation_id}", {
+    params: { curation_id: curationId },
+    method: "get",
+  });
 }
 
 export async function createCuration(body: CurationCreate): Promise<CurationResponse> {
-  const data = await apiFetch("/api/v1/curations/", { method: "post", body });
-  return data as unknown as CurationResponse;
+  return apiFetch("/api/v1/curations/", { method: "post", body });
 }
 
 export async function deleteCuration(curationId: string): Promise<void> {
-  await apiFetch(
-    `/api/v1/curations/${encodeURIComponent(curationId)}` as "/api/v1/curations/{curation_id}",
-    { method: "delete" },
-  );
+  await apiFetch("/api/v1/curations/{curation_id}", {
+    params: { curation_id: curationId },
+    method: "delete",
+  });
 }
 
 export async function cancelCuration(curationId: string): Promise<CurationResponse> {
-  const data = await apiFetch(
-    `/api/v1/curations/${encodeURIComponent(curationId)}/cancel` as "/api/v1/curations/{curation_id}/cancel",
-    { method: "post" },
-  );
-  return data as unknown as CurationResponse;
+  return apiFetch("/api/v1/curations/{curation_id}/cancel", {
+    params: { curation_id: curationId },
+    method: "post",
+  });
 }
 
 /** Path (not full URL) for a curation job's SSE stream — passed to
@@ -64,5 +60,5 @@ export async function cancelCuration(curationId: string): Promise<CurationRespon
  * plain `EventSource` can't be used here: the endpoint is Bearer-authed
  * and `EventSource` can't set request headers). */
 export function curationStreamPath(curationId: string): string {
-  return `/api/v1/curations/${encodeURIComponent(curationId)}/stream`;
+  return buildPath("/api/v1/curations/{curation_id}/stream", { curation_id: curationId });
 }

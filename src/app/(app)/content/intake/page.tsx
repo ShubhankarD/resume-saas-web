@@ -1,12 +1,12 @@
 "use client";
 
 import { useId, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Check, Loader2, Upload } from "lucide-react";
 import { intakeResume } from "@/lib/api/content-upload";
-import { putContent, type IntakeResponse } from "@/lib/api/content";
-import { contentQueryKey } from "@/hooks/use-content";
+import type { ContentIn, IntakeResponse } from "@/lib/api/content";
+import { useReplaceContent } from "@/hooks/use-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +30,23 @@ const WHAT_HAPPENS_NEXT = [
  * `PUT /api/v1/content/` with (lightly edited) draft — never auto-saved on
  * the intake response itself.
  */
+/** The intake draft minus its intake-only fields, as a whole-record PUT body. */
+function intakeToContent(draft: IntakeResponse): ContentIn {
+  return {
+    name: draft.name,
+    photo: draft.photo,
+    contact: draft.contact,
+    taglines: draft.taglines,
+    skills: draft.skills,
+    experience: draft.experience,
+    education: draft.education,
+    application: draft.application,
+  };
+}
+
 export default function IntakePage() {
   const [draft, setDraft] = useState<IntakeResponse | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const queryClient = useQueryClient();
   const router = useRouter();
   const nameFieldId = useId();
 
@@ -42,25 +55,10 @@ export default function IntakePage() {
     onSuccess: (data) => setDraft(data),
   });
 
-  const saveMutation = useMutation({
-    mutationFn: (toSave: IntakeResponse) => {
-      const contentIn: import("@/lib/api/content").ContentIn = {
-        name: toSave.name,
-        photo: toSave.photo,
-        contact: toSave.contact,
-        taglines: toSave.taglines,
-        skills: toSave.skills,
-        experience: toSave.experience,
-        education: toSave.education,
-        application: toSave.application,
-      };
-      return putContent(contentIn);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: contentQueryKey });
-      router.push("/content");
-    },
-  });
+  const saveMutation = useReplaceContent();
+  function save(toSave: IntakeResponse) {
+    saveMutation.mutate(intakeToContent(toSave), { onSuccess: () => router.push("/content") });
+  }
 
   if (!draft) {
     return (
@@ -169,7 +167,7 @@ export default function IntakePage() {
         action={
           <Button
             variant="cta"
-            onClick={() => saveMutation.mutate(draft)}
+            onClick={() => save(draft)}
             disabled={saveMutation.isPending}
             data-testid="save-intake-draft"
           >
@@ -292,11 +290,7 @@ export default function IntakePage() {
           <Button variant="ghost" onClick={() => setDraft(null)} disabled={saveMutation.isPending}>
             Discard and start over
           </Button>
-          <Button
-            variant="cta"
-            onClick={() => saveMutation.mutate(draft)}
-            disabled={saveMutation.isPending}
-          >
+          <Button variant="cta" onClick={() => save(draft)} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? "Saving…" : "Save this draft"}
           </Button>
         </div>

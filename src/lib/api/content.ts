@@ -35,78 +35,69 @@ export type SkillGroupUpdate = components["schemas"]["SkillGroupUpdate"];
 export type EducationEntryUpdate = components["schemas"]["EducationEntryUpdate"];
 
 /** 404 on GET /content/ means "no content record yet" — the empty state,
- * not a hard error. Callers should catch ApiError with status 404 and treat
- * it as `null`; this helper does that for the common case (useQuery). */
+ * not a hard error. See useContent(), which maps that 404 to `null`. */
 export async function getContent(): Promise<ContentIn> {
-  const data = await apiFetch("/api/v1/content/", { method: "get" });
-  return data as unknown as ContentIn;
+  return (await apiFetch("/api/v1/content/", { method: "get" })) as ContentIn;
 }
 
 export async function putContent(body: ContentIn): Promise<ContentIn> {
-  const data = await apiFetch("/api/v1/content/", { method: "put", body });
-  return data as unknown as ContentIn;
+  return (await apiFetch("/api/v1/content/", { method: "put", body })) as ContentIn;
 }
 
 // --- Roles ---
 
 export async function createRole(body: RoleCreate) {
-  const data = await apiFetch("/api/v1/content/roles", { method: "post", body });
-  return data as unknown as RoleIn;
+  return (await apiFetch("/api/v1/content/roles", { method: "post", body })) as RoleIn;
 }
 
 export async function updateRole(roleId: string, body: RoleUpdate) {
-  const data = await apiFetch(
-    `/api/v1/content/roles/${encodeURIComponent(roleId)}` as "/api/v1/content/roles/{role_id}",
-    {
-      method: "put",
-      body,
-    },
-  );
-  return data as unknown as RoleIn;
+  return (await apiFetch("/api/v1/content/roles/{role_id}", {
+    method: "put",
+    params: { role_id: roleId },
+    body,
+  })) as RoleIn;
 }
 
 export async function deleteRole(roleId: string) {
-  await apiFetch(
-    `/api/v1/content/roles/${encodeURIComponent(roleId)}` as "/api/v1/content/roles/{role_id}",
-    {
-      method: "delete",
-    },
-  );
+  await apiFetch("/api/v1/content/roles/{role_id}", {
+    method: "delete",
+    params: { role_id: roleId },
+  });
 }
 
 // --- Groups ---
 
 export async function createGroup(roleId: string, body: GroupCreate) {
-  const data = await apiFetch(
-    `/api/v1/content/roles/${encodeURIComponent(roleId)}/groups` as "/api/v1/content/roles/{role_id}/groups",
-    { method: "post", body },
-  );
-  return data as unknown as GroupIn;
+  return (await apiFetch("/api/v1/content/roles/{role_id}/groups", {
+    method: "post",
+    params: { role_id: roleId },
+    body,
+  })) as GroupIn;
 }
 
 export async function updateGroup(roleId: string, groupId: string, body: GroupUpdate) {
-  const data = await apiFetch(
-    `/api/v1/content/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}` as "/api/v1/content/roles/{role_id}/groups/{group_id}",
-    { method: "put", body },
-  );
-  return data as unknown as GroupIn;
+  return (await apiFetch("/api/v1/content/roles/{role_id}/groups/{group_id}", {
+    method: "put",
+    params: { role_id: roleId, group_id: groupId },
+    body,
+  })) as GroupIn;
 }
 
 export async function deleteGroup(roleId: string, groupId: string) {
-  await apiFetch(
-    `/api/v1/content/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}` as "/api/v1/content/roles/{role_id}/groups/{group_id}",
-    { method: "delete" },
-  );
+  await apiFetch("/api/v1/content/roles/{role_id}/groups/{group_id}", {
+    method: "delete",
+    params: { role_id: roleId, group_id: groupId },
+  });
 }
 
 // --- Bullets ---
 
 export async function createBullet(roleId: string, groupId: string, body: BulletCreate) {
-  const data = await apiFetch(
-    `/api/v1/content/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}/bullets` as "/api/v1/content/roles/{role_id}/groups/{group_id}/bullets",
-    { method: "post", body },
-  );
-  return data as unknown as BulletIn;
+  return (await apiFetch("/api/v1/content/roles/{role_id}/groups/{group_id}/bullets", {
+    method: "post",
+    params: { role_id: roleId, group_id: groupId },
+    body,
+  })) as BulletIn;
 }
 
 export async function updateBullet(
@@ -115,86 +106,78 @@ export async function updateBullet(
   bulletId: string,
   body: BulletUpdate,
 ) {
-  const data = await apiFetch(
-    `/api/v1/content/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}/bullets/${encodeURIComponent(bulletId)}` as "/api/v1/content/roles/{role_id}/groups/{group_id}/bullets/{bullet_id}",
-    { method: "put", body },
-  );
-  return data as unknown as BulletIn;
+  return (await apiFetch("/api/v1/content/roles/{role_id}/groups/{group_id}/bullets/{bullet_id}", {
+    method: "put",
+    params: { role_id: roleId, group_id: groupId, bullet_id: bulletId },
+    body,
+  })) as BulletIn;
 }
 
 export async function deleteBullet(roleId: string, groupId: string, bulletId: string) {
-  await apiFetch(
-    `/api/v1/content/roles/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}/bullets/${encodeURIComponent(bulletId)}` as "/api/v1/content/roles/{role_id}/groups/{group_id}/bullets/{bullet_id}",
-    { method: "delete" },
-  );
+  await apiFetch("/api/v1/content/roles/{role_id}/groups/{group_id}/bullets/{bullet_id}", {
+    method: "delete",
+    params: { role_id: roleId, group_id: groupId, bullet_id: bulletId },
+  });
 }
 
 // --- Taglines ---
 
 export async function listTaglines() {
-  const data = await apiFetch("/api/v1/content/taglines", { method: "get" });
-  return data as Record<string, string>;
+  return (await apiFetch("/api/v1/content/taglines", { method: "get" })) as Record<string, string>;
 }
 
 export async function upsertTagline(key: string, body: TaglineUpdate) {
-  const data = await apiFetch(
-    `/api/v1/content/taglines/${encodeURIComponent(key)}` as "/api/v1/content/taglines/{key}",
-    { method: "put", body },
-  );
-  return data as unknown as { key: string; text: string };
+  return (await apiFetch("/api/v1/content/taglines/{key}", {
+    method: "put",
+    params: { key },
+    body,
+  })) as { key: string; text: string };
 }
 
 export async function deleteTagline(key: string) {
-  await apiFetch(
-    `/api/v1/content/taglines/${encodeURIComponent(key)}` as "/api/v1/content/taglines/{key}",
-    {
-      method: "delete",
-    },
-  );
+  await apiFetch("/api/v1/content/taglines/{key}", { method: "delete", params: { key } });
 }
 
 // --- Skills ---
 
 export async function listSkills() {
-  const data = await apiFetch("/api/v1/content/skills", { method: "get" });
-  return data as unknown as Record<string, SkillGroupIn>;
+  return (await apiFetch("/api/v1/content/skills", { method: "get" })) as Record<
+    string,
+    SkillGroupIn
+  >;
 }
 
 export async function upsertSkill(key: string, body: SkillGroupUpdate) {
-  const data = await apiFetch(
-    `/api/v1/content/skills/${encodeURIComponent(key)}` as "/api/v1/content/skills/{key}",
-    { method: "put", body },
-  );
-  return data as unknown as SkillGroupIn & { key: string };
+  return (await apiFetch("/api/v1/content/skills/{key}", {
+    method: "put",
+    params: { key },
+    body,
+  })) as SkillGroupIn & { key: string };
 }
 
 export async function deleteSkill(key: string) {
-  await apiFetch(
-    `/api/v1/content/skills/${encodeURIComponent(key)}` as "/api/v1/content/skills/{key}",
-    {
-      method: "delete",
-    },
-  );
+  await apiFetch("/api/v1/content/skills/{key}", { method: "delete", params: { key } });
 }
 
 // --- Education ---
 
 export async function listEducation() {
-  const data = await apiFetch("/api/v1/content/education", { method: "get" });
-  return data as unknown as EducationEntryIn[];
+  return (await apiFetch("/api/v1/content/education", {
+    method: "get",
+  })) as EducationEntryIn[];
 }
 
 export async function upsertEducation(entryId: string, body: EducationEntryUpdate) {
-  const data = await apiFetch(
-    `/api/v1/content/education/${encodeURIComponent(entryId)}` as "/api/v1/content/education/{entry_id}",
-    { method: "put", body },
-  );
-  return data as unknown as EducationEntryIn;
+  return (await apiFetch("/api/v1/content/education/{entry_id}", {
+    method: "put",
+    params: { entry_id: entryId },
+    body,
+  })) as EducationEntryIn;
 }
 
 export async function deleteEducation(entryId: string) {
-  await apiFetch(
-    `/api/v1/content/education/${encodeURIComponent(entryId)}` as "/api/v1/content/education/{entry_id}",
-    { method: "delete" },
-  );
+  await apiFetch("/api/v1/content/education/{entry_id}", {
+    method: "delete",
+    params: { entry_id: entryId },
+  });
 }

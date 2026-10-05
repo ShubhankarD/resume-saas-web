@@ -21,15 +21,11 @@ export type CreateJdInput =
   | { mode: "file"; file: File; title?: string; company?: string };
 
 export async function listJds(): Promise<JDSummary[]> {
-  const data = await apiFetch("/api/v1/jds/", { method: "get" });
-  return data as unknown as JDSummary[];
+  return apiFetch("/api/v1/jds/", { method: "get" });
 }
 
 export async function getJd(jdId: string): Promise<JDResponse> {
-  const data = await apiFetch(`/api/v1/jds/${encodeURIComponent(jdId)}` as "/api/v1/jds/{jd_id}", {
-    method: "get",
-  });
-  return data as unknown as JDResponse;
+  return apiFetch("/api/v1/jds/{jd_id}", { params: { jd_id: jdId }, method: "get" });
 }
 
 export async function createJd(input: CreateJdInput): Promise<JDResponse> {
@@ -46,7 +42,5 @@ export async function createJd(input: CreateJdInput): Promise<JDResponse> {
 }
 
 export async function deleteJd(jdId: string): Promise<void> {
-  await apiFetch(`/api/v1/jds/${encodeURIComponent(jdId)}` as "/api/v1/jds/{jd_id}", {
-    method: "delete",
-  });
+  await apiFetch("/api/v1/jds/{jd_id}", { params: { jd_id: jdId }, method: "delete" });
 }

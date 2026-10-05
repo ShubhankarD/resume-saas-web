@@ -21,7 +21,7 @@ import { SectionHeader } from "@/components/ui/page-header";
 import { SortableGrip, SortableRow } from "@/components/profiles/sortable-row";
 import type { ContentIn } from "@/lib/api/content";
 import type { ProfileWrite } from "@/lib/api/profiles";
-import { effectiveEducationOrder } from "@/lib/profile-draft";
+import { ProfileSelection } from "@/lib/profile-draft";
 
 const checkboxClassName =
   "size-4 shrink-0 cursor-pointer rounded-sm border-slate-300 accent-slate-900 outline-none focus-visible:ring-3 focus-visible:ring-ring/40 dark:border-slate-600 dark:accent-slate-100";
@@ -47,7 +47,7 @@ export function EducationEditor({
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const selected = effectiveEducationOrder(draft, content);
+  const selected = new ProfileSelection(draft, content).educationOrder();
   const byId = new Map(content.education.map((e) => [e.id, e]));
   const available = content.education.filter((entry) => !selected.includes(entry.id));
 

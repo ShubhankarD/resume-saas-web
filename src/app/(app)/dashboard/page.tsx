@@ -18,7 +18,7 @@ import { useProfiles } from "@/hooks/use-profiles";
 import { useJds } from "@/hooks/use-jds";
 import { useEvaluations } from "@/hooks/use-evaluations";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader, SectionHeader } from "@/components/ui/page-header";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -255,9 +255,7 @@ export default function DashboardPage() {
                           </span>
                         </span>
                         {e.status !== "completed" ? (
-                          <Badge variant={e.status === "failed" ? "destructive" : "secondary"}>
-                            {e.status}
-                          </Badge>
+                          <StatusBadge kind="job" status={e.status} />
                         ) : null}
                         <span className="shrink-0 text-sm font-semibold text-slate-900 tabular-nums dark:text-slate-100">
                           {e.overall_score != null ? `${e.overall_score}/10` : "—"}

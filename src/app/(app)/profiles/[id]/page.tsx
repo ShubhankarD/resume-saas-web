@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { BackLink } from "@/components/ui/back-link";
+import { FileDown } from "lucide-react";
 import { useContent } from "@/hooks/use-content";
-import { useProfile, useUpdateProfile } from "@/hooks/use-profiles";
-import { previewProfile } from "@/lib/api/profiles";
-import type { ProfileWrite } from "@/lib/api/profiles";
+import { useProfileEditor } from "@/hooks/use-profile-editor";
 import { ErrorMessage } from "@/components/content/error-message";
 import { Button } from "@/components/ui/button";
 import { CompactTabs } from "@/components/ui/compact-tabs";
@@ -27,89 +25,19 @@ import {
 } from "@/components/profiles/editor-tabs";
 import { BuildHistory, LatestPdfLink, useResumeExport } from "@/components/profiles/build-panel";
 
-const AUTOSAVE_DEBOUNCE_MS = 400;
-
 export default function ProfileEditorPage() {
   const params = useParams<{ id: string }>();
   const profileId = params.id;
 
-  const { data: profile, isLoading: profileLoading, error: profileError } = useProfile(profileId);
+  const { profileQuery, draft, updateDraft, ensureSaved, save, preview } =
+    useProfileEditor(profileId);
+  const { isLoading: profileLoading, error: profileError } = profileQuery;
   const { data: content, isLoading: contentLoading, error: contentError } = useContent();
-  const updateProfile = useUpdateProfile(profileId);
-
-  const [draft, setDraft] = useState<ProfileWrite | null>(null);
-  const [previewHtml, setPreviewHtml] = useState("");
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState<unknown>(null);
 
   // Which resume section the left pane is showing. Presentation-only UI
   // state, deliberately outside `draft` — exactly like preview zoom — so
-  // changing tabs can never re-trigger the autosave effect below.
+  // changing tabs can never trigger an autosave.
   const [tab, setTab] = useState<SectionTab>(DEFAULT_SECTION_TAB);
-
-  // Initialize the draft from the real GET once, and never again from a
-  // background refetch — otherwise a stale server response racing an
-  // in-flight edit would clobber what the user just typed.
-  const initialized = useRef(false);
-  useEffect(() => {
-    if (profile && !initialized.current) {
-      initialized.current = true;
-      setDraft(profile);
-    }
-  }, [profile]);
-
-  // Monotonic guard against out-of-order preview responses (a slow request
-  // from an earlier edit resolving after a faster, more recent one).
-  const requestSeq = useRef(0);
-
-  async function saveAndPreview(next: ProfileWrite) {
-    const seq = ++requestSeq.current;
-    setPreviewLoading(true);
-    try {
-      await updateProfile.mutateAsync(next);
-      const html = await previewProfile(profileId);
-      if (seq === requestSeq.current) {
-        setPreviewHtml(html);
-        setPreviewError(null);
-      }
-    } catch (err) {
-      if (seq === requestSeq.current) setPreviewError(err);
-    } finally {
-      if (seq === requestSeq.current) setPreviewLoading(false);
-    }
-  }
-
-  // Debounced autosave-then-preview: fires ~400ms after the last edit to
-  // any field (typing, checkbox toggles, drag reorders, template switches
-  // all funnel through setDraft), per the issue's split-screen spec.
-  // Presentation-only state (preview zoom, the active section tab, the
-  // mobile edit/preview pane) deliberately lives outside `draft` so it can
-  // never re-trigger this effect.
-  const skipNextDebounce = useRef(true);
-  useEffect(() => {
-    if (!draft) return;
-    if (skipNextDebounce.current) {
-      // The very first draft assignment (straight from GET) is already
-      // persisted — only fetch the initial preview, don't PUT it back.
-      skipNextDebounce.current = false;
-      void previewProfile(profileId).then(setPreviewHtml).catch(setPreviewError);
-      return;
-    }
-    const timer = setTimeout(() => {
-      void saveAndPreview(draft);
-    }, AUTOSAVE_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft]);
-
-  function updateDraft(patch: Partial<ProfileWrite>) {
-    setDraft((d) => (d ? { ...d, ...patch } : d));
-  }
-
-  async function ensureSaved(): Promise<void> {
-    if (!draft) return;
-    await updateProfile.mutateAsync(draft);
-  }
 
   // The single export implementation for this editor — the contextual
   // toolbar's CTA drives it.
@@ -129,13 +57,7 @@ export default function ProfileEditorPage() {
         sticky
         left={
           <div className="flex min-w-0 items-center gap-2">
-            <Link
-              href="/profiles"
-              aria-label="Back to resumes"
-              className="focus-visible:ring-ring/50 -ml-1 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-            </Link>
+            <BackLink href="/profiles" label="Back to resumes" className="-ml-1" />
             <p
               data-testid="profile-editor-label"
               className="truncate text-sm font-semibold tracking-[-0.01em] text-slate-900 sm:text-base dark:text-slate-50"
@@ -146,10 +68,7 @@ export default function ProfileEditorPage() {
         }
         right={
           <div className="flex shrink-0 items-center gap-3">
-            <SaveState
-              isSaving={updateProfile.isPending || previewLoading}
-              error={updateProfile.error}
-            />
+            <SaveState isSaving={save.isSaving} error={save.error} />
             <Button
               variant="cta"
               onClick={() => void exportPdf.run()}
@@ -221,9 +140,9 @@ export default function ProfileEditorPage() {
         }
         preview={
           <LivePreview
-            html={previewHtml}
-            isLoading={previewLoading}
-            error={previewError}
+            html={preview.html}
+            isLoading={preview.isLoading}
+            error={preview.error}
             status={
               <>
                 <ErrorMessage error={exportPdf.buildError} />

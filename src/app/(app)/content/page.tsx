@@ -5,7 +5,6 @@ import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase,
   ChevronRight,
@@ -15,8 +14,7 @@ import {
   Repeat2,
   type LucideIcon,
 } from "lucide-react";
-import { useContent, contentQueryKey } from "@/hooks/use-content";
-import { putContent } from "@/lib/api/content";
+import { useContent, useReplaceContent } from "@/hooks/use-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
@@ -40,7 +38,6 @@ const PREVIEW_ROWS = 3;
 
 export default function ContentOverviewPage() {
   const { data: content, isLoading, error } = useContent();
-  const queryClient = useQueryClient();
   const [showScratchForm, setShowScratchForm] = useState(false);
   const nameFieldId = useId();
 
@@ -50,9 +47,10 @@ export default function ContentOverviewPage() {
     formState: { errors },
   } = useForm<ScratchForm>({ resolver: zodResolver(scratchSchema) });
 
-  const scratchMutation = useMutation({
-    mutationFn: (name: string) =>
-      putContent({
+  const scratchMutation = useReplaceContent();
+  function startFromScratch(name: string) {
+    scratchMutation.mutate(
+      {
         name,
         contact: [],
         taglines: {},
@@ -60,12 +58,10 @@ export default function ContentOverviewPage() {
         experience: [],
         education: [],
         application: {},
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: contentQueryKey });
-      setShowScratchForm(false);
-    },
-  });
+      },
+      { onSuccess: () => setShowScratchForm(false) },
+    );
+  }
 
   if (isLoading) {
     return (
@@ -137,7 +133,7 @@ export default function ContentOverviewPage() {
 
         {showScratchForm && (
           <form
-            onSubmit={handleSubmit((values) => scratchMutation.mutate(values.name))}
+            onSubmit={handleSubmit((values) => startFromScratch(values.name))}
             className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900"
           >
             <div>

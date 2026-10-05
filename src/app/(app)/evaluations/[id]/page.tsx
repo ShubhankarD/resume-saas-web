@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { BackLink } from "@/components/ui/back-link";
 import { useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { useEvaluation } from "@/hooks/use-evaluations";
 import { useJds } from "@/hooks/use-jds";
 import { useProfiles } from "@/hooks/use-profiles";
@@ -32,13 +32,7 @@ export default function EvaluationDetailPage() {
         className="-mx-4 -mt-5 w-auto px-4 md:-mx-6 md:-mt-6 md:px-6 lg:-mx-8 lg:px-8"
         left={
           <>
-            <Link
-              href="/evaluations"
-              aria-label="Back to evaluations"
-              className="focus-visible:ring-ring/50 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-            </Link>
+            <BackLink href="/evaluations" label="Back to evaluations" />
             <div className="min-w-0">
               <h1 className="truncate text-xl font-bold tracking-[-0.02em] text-slate-900 sm:text-2xl dark:text-slate-50">
                 {profileLabel ?? (isLoading ? "Loading…" : "Evaluation")}
