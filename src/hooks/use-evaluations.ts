@@ -8,19 +8,17 @@ import {
   listEvaluations,
   type EvaluationCreate,
 } from "@/lib/api/evaluations";
-
-export const evaluationsQueryKey = ["evaluations"] as const;
-export const evaluationQueryKey = (id: string) => ["evaluations", id] as const;
+import { queryKeys } from "@/lib/query-keys";
 
 /** GET /api/v1/evaluations/ has no profile/JD filter server-side (flat,
  * tenant-scoped list) — mirrors use-builds.ts's useBuilds(). */
 export function useEvaluations() {
-  return useQuery({ queryKey: evaluationsQueryKey, queryFn: listEvaluations });
+  return useQuery({ queryKey: queryKeys.evaluations.all, queryFn: listEvaluations });
 }
 
 export function useEvaluation(evaluationId: string | undefined) {
   return useQuery({
-    queryKey: evaluationQueryKey(evaluationId ?? ""),
+    queryKey: queryKeys.evaluations.detail(evaluationId ?? ""),
     queryFn: () => getEvaluation(evaluationId as string),
     enabled: Boolean(evaluationId),
   });
@@ -36,8 +34,8 @@ export function useCreateEvaluation() {
   return useMutation({
     mutationFn: (body: EvaluationCreate) => createEvaluation(body),
     onSuccess: (data) => {
-      queryClient.setQueryData(evaluationQueryKey(data.id), data);
-      queryClient.invalidateQueries({ queryKey: evaluationsQueryKey });
+      queryClient.setQueryData(queryKeys.evaluations.detail(data.id), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.all });
     },
   });
 }
@@ -47,7 +45,7 @@ export function useDeleteEvaluation() {
   return useMutation({
     mutationFn: (evaluationId: string) => deleteEvaluation(evaluationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: evaluationsQueryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.evaluations.all });
     },
   });
 }

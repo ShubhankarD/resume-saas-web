@@ -1,6 +1,8 @@
 import type { paths } from "./schema";
-import { useAuthStore } from "@/lib/auth/store";
-import { readRefreshToken, storeTokens, clearTokens } from "@/lib/auth/token-storage";
+import { createHttpClient, bearerAuth } from "@/lib/api/http";
+import { browserAuthSession } from "@/lib/auth/session";
+
+export { ApiError, getErrorMessage, throwIfNotOk } from "@/lib/api/http";
 
 /**
  * Base URL of the resume-saas backend API, e.g. http://localhost:8000.
@@ -9,60 +11,12 @@ import { readRefreshToken, storeTokens, clearTokens } from "@/lib/auth/token-sto
  */
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-/**
- * Auth header injection point.
- *
- * Reads the in-memory access token from the Zustand auth store (see
- * plans/phase-F2-auth.md: access token in memory, refresh token in
- * localStorage). Returns no header at all when there is no session yet —
- * that's the signal apiFetch uses below to decide whether a 401 is worth a
- * refresh-and-retry (an unauthenticated call, e.g. /auth/login itself,
- * never triggers one).
- */
-function getAuthHeader(): Record<string, string> {
-  const token = useAuthStore.getState().accessToken;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-export class ApiError extends Error {
-  status: number;
-  body: unknown;
-
-  constructor(status: number, body: unknown) {
-    super(`API request failed with status ${status}`);
-    this.name = "ApiError";
-    this.status = status;
-    this.body = body;
-  }
-}
-
-/**
- * Extracts a human-readable message from an ApiError's response body,
- * matching the backend's two error shapes (see app/main.py's AppError
- * handler and FastAPI's own 422 validation errors):
- *   - `{"detail": "some message"}` — every app-level error (401/403/404/409/422/…)
- *   - `{"detail": [{"loc": [...], "msg": "...", "type": "..."}]}` — FastAPI's
- *     own request-validation 422s (e.g. malformed email format)
- */
-export function getErrorMessage(err: unknown, fallback = "Something went wrong"): string {
-  if (err instanceof ApiError) {
-    const body = err.body;
-    if (body && typeof body === "object" && "detail" in body) {
-      const detail = (body as { detail?: unknown }).detail;
-      if (typeof detail === "string") return detail;
-      if (Array.isArray(detail)) {
-        const messages = detail
-          .map((entry) =>
-            entry && typeof entry === "object" && "msg" in entry ? String(entry.msg) : null,
-          )
-          .filter((m): m is string => Boolean(m));
-        if (messages.length > 0) return messages.join("; ");
-      }
-    }
-    return fallback;
-  }
-  return fallback;
-}
+/** The app's one HTTP client: the framework-free core from http.ts wired
+ * to the browser session (see src/lib/auth/session.ts). */
+const http = createHttpClient({
+  baseUrl: API_BASE_URL,
+  middleware: [bearerAuth(browserAuthSession)],
+});
 
 type Paths = paths;
 type Method = "get" | "put" | "post" | "delete" | "options" | "head" | "patch" | "trace";
@@ -77,6 +31,22 @@ type RequestBodyFor<P extends keyof Paths, M extends Method> =
     requestBody: { content: { "application/json": infer B } };
   }
     ? B
+    : never;
+
+/** The path-parameter object for a given path+method, or `never` if it has none. */
+type PathParamsFor<P extends keyof Paths, M extends Method> =
+  OperationFor<P, M> extends { parameters: { path: infer T } }
+    ? [T] extends [undefined]
+      ? never
+      : NonNullable<T>
+    : never;
+
+/** The query-parameter object for a given path+method, or `never` if it has none. */
+type QueryParamsFor<P extends keyof Paths, M extends Method> =
+  OperationFor<P, M> extends { parameters: { query?: infer T } }
+    ? [NonNullable<T>] extends [never]
+      ? never
+      : NonNullable<T>
     : never;
 
 /** The JSON success-response (2xx) type for a given path+method. */
@@ -100,115 +70,56 @@ type ApiFetchOptions<P extends keyof Paths, M extends Method> = Omit<
   "body" | "method"
 > & {
   method?: M;
-} & ([RequestBodyFor<P, M>] extends [never] ? { body?: never } : { body: RequestBodyFor<P, M> });
+} & ([RequestBodyFor<P, M>] extends [never] ? { body?: never } : { body: RequestBodyFor<P, M> }) &
+  ([PathParamsFor<P, M>] extends [never] ? { params?: never } : { params: PathParamsFor<P, M> }) &
+  ([QueryParamsFor<P, M>] extends [never] ? { query?: never } : { query?: QueryParamsFor<P, M> });
 
 /**
- * Thin typed fetch wrapper around the backend API.
+ * Fills `{name}` placeholders in an OpenAPI path template from `params`,
+ * URI-encoding each value, and appends `query` as a query string.
+ */
+export function buildPath(
+  template: string,
+  params?: Record<string, string | number>,
+  query?: Record<string, string | number | boolean | null | undefined>,
+): string {
+  const path = template.replace(/\{(\w+)\}/g, (_, name: string) => {
+    const value = params?.[name];
+    if (value === undefined) throw new Error(`Missing path param "${name}" for ${template}`);
+    return encodeURIComponent(String(value));
+  });
+  if (!query) return path;
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null) search.append(key, String(value));
+  }
+  const qs = search.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
+/**
+ * Typed fetch wrapper around the backend API. `path` is the OpenAPI path
+ * *template* (e.g. "/api/v1/builds/{build_id}") and `params` supplies its
+ * placeholders, so request body, path params, query params and the
+ * response type are all checked against schema.d.ts.
  *
  * Deliberately hand-written rather than a fully generated client (see
  * plans/README.md's architecture decisions) so that 401-refresh-retry logic
- * stays under our own control instead of being generated.
- *
- * On a 401 from an *authenticated* request (one that carried an
- * Authorization header), attempts exactly one POST /api/v1/auth/refresh
- * using the refresh token in localStorage; on success it updates the store
- * and retries the original request once, on failure it clears the session
- * so protected UI redirects to /login.
+ * stays under our own control (see http.ts's `bearerAuth`).
  */
 export async function apiFetch<P extends keyof Paths, M extends Method = "get">(
   path: P,
   options?: ApiFetchOptions<P, M>,
 ): Promise<SuccessResponseFor<P, M>> {
-  return doFetch(path, options, false);
-}
-
-async function doFetch<P extends keyof Paths, M extends Method>(
-  path: P,
-  options: ApiFetchOptions<P, M> | undefined,
-  isRetry: boolean,
-): Promise<SuccessResponseFor<P, M>> {
-  const { body, headers, method, ...rest } = options ?? ({} as ApiFetchOptions<P, M>);
-  const authHeader = getAuthHeader();
-
-  const response = await fetch(`${API_BASE_URL}${String(path)}`, {
+  const { method, params, query, ...rest } = (options ?? {}) as ApiFetchOptions<P, M> & {
+    params?: Record<string, string | number>;
+    query?: Record<string, string | number | boolean | null | undefined>;
+  };
+  const data = await http.json(buildPath(String(path), params, query), {
     ...rest,
-    method: method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeader,
-      ...headers,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    method: (method ?? "get").toUpperCase(),
   });
-
-  if (response.status === 401 && !isRetry && Object.keys(authHeader).length > 0) {
-    const refreshed = await tryRefresh();
-    if (refreshed) {
-      return doFetch(path, options, true);
-    }
-  }
-
-  const isJson = response.headers.get("content-type")?.includes("application/json");
-  const data = isJson ? await response.json() : await response.text();
-
-  if (!response.ok) {
-    throw new ApiError(response.status, data);
-  }
-
   return data as SuccessResponseFor<P, M>;
-}
-
-let inFlightRefresh: Promise<boolean> | null = null;
-
-/**
- * Performs the single refresh attempt described in apiFetch's docstring.
- * Deliberately uses a raw fetch (not apiFetch) to avoid recursing back into
- * this same 401-handling path. De-duplicated via inFlightRefresh so
- * concurrent 401s (e.g. several requests in flight at once) share one
- * refresh call instead of racing to rotate the same refresh token N times —
- * the backend revokes a refresh token the moment it's used (see
- * app/api/auth.py's refresh(): `stored.revoked = True`), so a second,
- * independent refresh call with the now-already-used token would 401.
- */
-async function tryRefresh(): Promise<boolean> {
-  if (inFlightRefresh) return inFlightRefresh;
-
-  inFlightRefresh = (async () => {
-    const refreshToken = readRefreshToken();
-    if (!refreshToken) {
-      useAuthStore.getState().clearSession();
-      return false;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      if (!response.ok) {
-        clearTokens();
-        useAuthStore.getState().clearSession();
-        return false;
-      }
-
-      const data = (await response.json()) as { access_token: string; refresh_token: string };
-      storeTokens(data.refresh_token);
-      useAuthStore.getState().setAccessToken(data.access_token);
-      return true;
-    } catch {
-      clearTokens();
-      useAuthStore.getState().clearSession();
-      return false;
-    }
-  })();
-
-  try {
-    return await inFlightRefresh;
-  } finally {
-    inFlightRefresh = null;
-  }
 }
 
 /** Calls the backend's health check endpoint (GET /api/v1/health). */
@@ -218,47 +129,14 @@ export function getHealth() {
 
 /**
  * Raw fetch for requests apiFetch can't express — multipart/form-data
- * bodies (content import/intake) and non-JSON responses (YAML export) —
- * while still sharing apiFetch's auth-header injection and one-shot
- * 401-refresh-and-retry behavior. `init.body` is passed through untouched
- * (a `FormData` instance, typically) and no `Content-Type` header is set by
- * this wrapper so the browser can add the correct multipart boundary
- * itself; pass one explicitly via `init.headers` for non-multipart callers.
+ * bodies (content import/intake) and non-JSON responses (YAML export, SSE
+ * streams) — while still sharing apiFetch's auth-header injection and
+ * one-shot 401-refresh-and-retry behavior. `init.body` is passed through
+ * untouched (a `FormData` instance, typically) and no `Content-Type` header
+ * is set so the browser can add the correct multipart boundary itself.
  *
- * Returns the raw `Response` so callers decide how to read it (JSON text,
- * blob, or inspecting headers like `Content-Disposition`) — unlike
- * apiFetch, which always parses JSON/text and unwraps to the body.
+ * Returns the raw `Response` so callers decide how to read it.
  */
-export async function authFetch(
-  path: string,
-  init: RequestInit = {},
-  isRetry = false,
-): Promise<Response> {
-  const authHeader = getAuthHeader();
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      ...authHeader,
-      ...init.headers,
-    },
-  });
-
-  if (response.status === 401 && !isRetry && Object.keys(authHeader).length > 0) {
-    const refreshed = await tryRefresh();
-    if (refreshed) {
-      return authFetch(path, init, true);
-    }
-  }
-
-  return response;
-}
-
-/** Throws ApiError from a non-ok raw Response, parsing its body the same
- * way doFetch does (JSON when possible, else text) so getErrorMessage()
- * works uniformly across apiFetch and authFetch callers. */
-export async function throwIfNotOk(response: Response): Promise<void> {
-  if (response.ok) return;
-  const isJson = response.headers.get("content-type")?.includes("application/json");
-  const data = isJson ? await response.json() : await response.text();
-  throw new ApiError(response.status, data);
+export function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  return http.send(path, init);
 }

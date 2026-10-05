@@ -4,11 +4,9 @@ import { useId, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Quote } from "lucide-react";
-import { useContent, contentQueryKey } from "@/hooks/use-content";
+import { useContent, useTaglineMutations } from "@/hooks/use-content";
 import { useProfiles } from "@/hooks/use-profiles";
-import { upsertTagline, deleteTagline } from "@/lib/api/content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,8 +35,6 @@ export default function TaglinesPage() {
   // (ProfileSummary.tagline), so usage counts are a client-side tally, not a
   // new endpoint. If profiles haven't loaded, the count is simply omitted.
   const { data: profiles } = useProfiles();
-  const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: contentQueryKey });
   const fieldId = useId();
   const [addOpen, setAddOpen] = useState(false);
 
@@ -50,14 +46,7 @@ export default function TaglinesPage() {
     return counts;
   }, [profiles]);
 
-  const upsertMutation = useMutation({
-    mutationFn: ({ key, text }: { key: string; text: string }) => upsertTagline(key, { text }),
-    onSuccess: invalidate,
-  });
-  const deleteMutation = useMutation({
-    mutationFn: (key: string) => deleteTagline(key),
-    onSuccess: invalidate,
-  });
+  const { upsert: upsertMutation, remove: deleteMutation } = useTaglineMutations();
 
   const {
     register,

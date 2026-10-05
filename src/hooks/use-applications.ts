@@ -9,16 +9,14 @@ import {
   deleteApplication,
   fetchApplicationScreenshotUrl,
   getApplication,
-  isCancellableApplicationStatus,
   listApplications,
   type ApplicationCreate,
 } from "@/lib/api/applications";
-
-export const applicationsQueryKey = ["applications"] as const;
-export const applicationQueryKey = (id: string) => ["applications", id] as const;
+import { queryKeys } from "@/lib/query-keys";
+import { isTerminalStatus } from "@/lib/domain/job-status";
 
 export function useApplications() {
-  return useQuery({ queryKey: applicationsQueryKey, queryFn: listApplications });
+  return useQuery({ queryKey: queryKeys.applications.all, queryFn: listApplications });
 }
 
 /** Polls the job row every 3s while non-terminal — same fallback/cross-check
@@ -29,12 +27,12 @@ export function useApplications() {
  * without this query landing at least once after "filling". */
 export function useApplication(applicationId: string | undefined) {
   return useQuery({
-    queryKey: applicationQueryKey(applicationId ?? ""),
+    queryKey: queryKeys.applications.detail(applicationId ?? ""),
     queryFn: () => getApplication(applicationId as string),
     enabled: Boolean(applicationId),
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      return status && isCancellableApplicationStatus(status) ? 3000 : false;
+      return status && !isTerminalStatus("application", status) ? 3000 : false;
     },
   });
 }
@@ -48,8 +46,8 @@ export function useCreateApplication() {
   return useMutation({
     mutationFn: (body: ApplicationCreate) => createApplication(body),
     onSuccess: (data) => {
-      queryClient.setQueryData(applicationQueryKey(data.id), data);
-      queryClient.invalidateQueries({ queryKey: applicationsQueryKey });
+      queryClient.setQueryData(queryKeys.applications.detail(data.id), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.applications.all });
     },
   });
 }
@@ -59,7 +57,7 @@ export function useDeleteApplication() {
   return useMutation({
     mutationFn: (applicationId: string) => deleteApplication(applicationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationsQueryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.applications.all });
     },
   });
 }
@@ -69,8 +67,8 @@ export function useCancelApplication(applicationId: string) {
   return useMutation({
     mutationFn: () => cancelApplication(applicationId),
     onSuccess: (data) => {
-      queryClient.setQueryData(applicationQueryKey(applicationId), data);
-      queryClient.invalidateQueries({ queryKey: applicationsQueryKey });
+      queryClient.setQueryData(queryKeys.applications.detail(applicationId), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.applications.all });
     },
   });
 }
@@ -84,8 +82,8 @@ export function useConfirmSubmitApplication(applicationId: string) {
   return useMutation({
     mutationFn: () => confirmSubmitApplication(applicationId),
     onSuccess: (data) => {
-      queryClient.setQueryData(applicationQueryKey(applicationId), data);
-      queryClient.invalidateQueries({ queryKey: applicationsQueryKey });
+      queryClient.setQueryData(queryKeys.applications.detail(applicationId), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.applications.all });
     },
   });
 }

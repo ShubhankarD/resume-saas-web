@@ -2,17 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createJd, deleteJd, getJd, listJds, type CreateJdInput } from "@/lib/api/jds";
-
-export const jdsQueryKey = ["jds"] as const;
-export const jdQueryKey = (id: string) => ["jds", id] as const;
+import { queryKeys } from "@/lib/query-keys";
 
 export function useJds() {
-  return useQuery({ queryKey: jdsQueryKey, queryFn: listJds });
+  return useQuery({ queryKey: queryKeys.jds.all, queryFn: listJds });
 }
 
 export function useJd(jdId: string | undefined) {
   return useQuery({
-    queryKey: jdQueryKey(jdId ?? ""),
+    queryKey: queryKeys.jds.detail(jdId ?? ""),
     queryFn: () => getJd(jdId as string),
     enabled: Boolean(jdId),
   });
@@ -23,7 +21,7 @@ export function useCreateJd() {
   return useMutation({
     mutationFn: (input: CreateJdInput) => createJd(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: jdsQueryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jds.all });
     },
   });
 }
@@ -33,7 +31,7 @@ export function useDeleteJd() {
   return useMutation({
     mutationFn: (jdId: string) => deleteJd(jdId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: jdsQueryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jds.all });
     },
   });
 }

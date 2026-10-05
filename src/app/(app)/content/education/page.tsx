@@ -4,10 +4,8 @@ import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { GraduationCap, Plus } from "lucide-react";
-import { useContent, contentQueryKey } from "@/hooks/use-content";
-import { upsertEducation, deleteEducation } from "@/lib/api/content";
+import { useContent, useEducationMutations } from "@/hooks/use-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,19 +30,10 @@ const editSchema = z.object({ text: z.string().min(1, "Text is required").max(50
 
 export default function EducationPage() {
   const { data: content, isLoading, error } = useContent();
-  const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: contentQueryKey });
   const fieldId = useId();
   const [addOpen, setAddOpen] = useState(false);
 
-  const upsertMutation = useMutation({
-    mutationFn: ({ id, text }: { id: string; text: string }) => upsertEducation(id, { text }),
-    onSuccess: invalidate,
-  });
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteEducation(id),
-    onSuccess: invalidate,
-  });
+  const { upsert: upsertMutation, remove: deleteMutation } = useEducationMutations();
 
   const {
     register,

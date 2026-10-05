@@ -16,7 +16,8 @@ import { useBuilds } from "@/hooks/use-builds";
 import { useProfiles } from "@/hooks/use-profiles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { isTerminalStatus } from "@/lib/domain/job-status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -41,16 +42,6 @@ const createSchema = z.object({
   resume_build_id: z.string(),
 });
 type CreateForm = z.infer<typeof createSchema>;
-
-const TERMINAL_STATUSES = new Set(["submitted", "cancelled", "failed", "expired"]);
-
-function statusVariant(status: string) {
-  if (status === "submitted") return "default" as const;
-  if (status === "failed" || status === "cancelled" || status === "expired") {
-    return "destructive" as const;
-  }
-  return "secondary" as const;
-}
 
 function jobDomain(url: string): string {
   try {
@@ -225,7 +216,7 @@ export default function ApplicationsListPage() {
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="truncate">{jobDomain(a.job_url)}</CardTitle>
-                  <Badge variant={statusVariant(a.status)}>{a.status}</Badge>
+                  <StatusBadge kind="application" status={a.status} />
                 </div>
                 <a
                   href={a.job_url}
@@ -244,7 +235,7 @@ export default function ApplicationsListPage() {
                   variant="outline"
                   size="sm"
                 >
-                  {TERMINAL_STATUSES.has(a.status) ? "View" : "Watch live"}
+                  {isTerminalStatus("application", a.status) ? "View" : "Watch live"}
                 </Button>
                 <ConfirmDeleteButton
                   label={`application to ${jobDomain(a.job_url)}`}
