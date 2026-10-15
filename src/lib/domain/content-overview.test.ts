@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyContent, summarizeContent } from "./content-overview";
+import { countBullets, emptyContent, summarizeContent } from "./content-overview";
 
 const role = (bulletsPerGroup: number[]) => ({
   groups: bulletsPerGroup.map((n) => ({ bullets: Array.from({ length: n }, () => ({})) })),
@@ -56,5 +56,12 @@ describe("emptyContent", () => {
       education: [],
       application: {},
     });
+  });
+});
+
+describe("countBullets", () => {
+  it("sums bullets across roles and groups", () => {
+    expect(countBullets([role([2, 1]), role([4]), role([])])).toBe(7);
+    expect(countBullets([])).toBe(0);
   });
 });

@@ -31,12 +31,19 @@ interface SummarizableContent {
   education: readonly unknown[];
 }
 
-export function summarizeContent(content: SummarizableContent): ContentSummary {
-  const roleCount = content.experience.length;
-  const bulletCount = content.experience.reduce(
+type ExperienceLike = SummarizableContent["experience"];
+
+/** Total bullets across every group of every role. */
+export function countBullets(experience: ExperienceLike): number {
+  return experience.reduce(
     (sum, role) => sum + role.groups.reduce((s, g) => s + g.bullets.length, 0),
     0,
   );
+}
+
+export function summarizeContent(content: SummarizableContent): ContentSummary {
+  const roleCount = content.experience.length;
+  const bulletCount = countBullets(content.experience);
   const skillCount = Object.keys(content.skills).length;
   const taglineCount = Object.keys(content.taglines).length;
   const educationCount = content.education.length;
