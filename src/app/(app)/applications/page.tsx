@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { surfacedElsewhere } from "@/lib/form-submit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ExternalLink, Loader2, Plus, SendHorizontal } from "lucide-react";
@@ -122,14 +123,16 @@ export default function ApplicationsListPage() {
         </SheetHeader>
 
         <form
-          onSubmit={handleSubmit(async (values) => {
-            const job = await createApplication.mutateAsync({
-              job_url: values.job_url,
-              resume_build_id: values.resume_build_id ? values.resume_build_id : undefined,
-            });
-            setCreateOpen(false);
-            router.push(`/applications/${job.id}`);
-          })}
+          onSubmit={surfacedElsewhere(
+            handleSubmit(async (values) => {
+              const job = await createApplication.mutateAsync({
+                job_url: values.job_url,
+                resume_build_id: values.resume_build_id ? values.resume_build_id : undefined,
+              });
+              setCreateOpen(false);
+              router.push(`/applications/${job.id}`);
+            }),
+          )}
           className="mt-4 space-y-4"
         >
           <FormField

@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { useForm } from "react-hook-form";
+import { surfacedElsewhere } from "@/lib/form-submit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -43,10 +44,12 @@ export function RoleCreateForm({
 
   return (
     <form
-      onSubmit={handleSubmit(async (values) => {
-        await onSubmit(values);
-        reset();
-      })}
+      onSubmit={surfacedElsewhere(
+        handleSubmit(async (values) => {
+          await onSubmit(values);
+          reset();
+        }),
+      )}
       className="space-y-4"
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
