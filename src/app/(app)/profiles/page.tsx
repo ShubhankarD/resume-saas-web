@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { surfacedElsewhere } from "@/lib/form-submit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { FileUser, Loader2, Pencil, Plus, Search } from "lucide-react";
@@ -106,27 +107,29 @@ export default function ProfilesListPage() {
           </p>
         </SheetHeader>
         <form
-          onSubmit={handleSubmit(async (values) => {
-            const profile = await createProfile.mutateAsync({
-              name: values.name,
-              label: values.label,
-              tagline: "default",
-              density: "tight",
-              max_pages: 1,
-              template: "resume.html.j2",
-              skills_order: [],
-              skill_overrides: {},
-              groups_order: [],
-              experience: null,
-              education: null,
-              headings: {},
-              bullets: {},
-              bullet_overrides: {},
-            });
-            reset();
-            setShowCreateForm(false);
-            window.location.href = `/profiles/${profile.id}`;
-          })}
+          onSubmit={surfacedElsewhere(
+            handleSubmit(async (values) => {
+              const profile = await createProfile.mutateAsync({
+                name: values.name,
+                label: values.label,
+                tagline: "default",
+                density: "tight",
+                max_pages: 1,
+                template: "resume.html.j2",
+                skills_order: [],
+                skill_overrides: {},
+                groups_order: [],
+                experience: null,
+                education: null,
+                headings: {},
+                bullets: {},
+                bullet_overrides: {},
+              });
+              reset();
+              setShowCreateForm(false);
+              window.location.href = `/profiles/${profile.id}`;
+            }),
+          )}
           className="flex flex-col gap-4"
         >
           <FormField

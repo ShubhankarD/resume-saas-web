@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { surfacedElsewhere } from "@/lib/form-submit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Plus, Sparkles } from "lucide-react";
@@ -95,25 +96,27 @@ export default function CurationsListPage() {
         </SheetHeader>
 
         <form
-          onSubmit={handleSubmit(async (values) => {
-            // min_score/max_score_gate_attempts/max_turns are optional
-            // on the backend (each has a real default — see
-            // app/schemas/curation.py's DEFAULT_MIN_SCORE etc.), but
-            // openapi-typescript generates CurationCreate with them
-            // required (no `?`) since FastAPI's own OpenAPI schema
-            // doesn't mark a field with a default as non-required.
-            // Passing the same literal defaults explicitly here keeps
-            // this a plain, typed object rather than an `as` cast.
-            const job = await createCuration.mutateAsync({
-              jd_id: values.jd_id,
-              profile_name: values.profile_name,
-              min_score: 8.5,
-              max_score_gate_attempts: 3,
-              max_turns: 40,
-            });
-            setCreateOpen(false);
-            router.push(`/curations/${job.id}`);
-          })}
+          onSubmit={surfacedElsewhere(
+            handleSubmit(async (values) => {
+              // min_score/max_score_gate_attempts/max_turns are optional
+              // on the backend (each has a real default — see
+              // app/schemas/curation.py's DEFAULT_MIN_SCORE etc.), but
+              // openapi-typescript generates CurationCreate with them
+              // required (no `?`) since FastAPI's own OpenAPI schema
+              // doesn't mark a field with a default as non-required.
+              // Passing the same literal defaults explicitly here keeps
+              // this a plain, typed object rather than an `as` cast.
+              const job = await createCuration.mutateAsync({
+                jd_id: values.jd_id,
+                profile_name: values.profile_name,
+                min_score: 8.5,
+                max_score_gate_attempts: 3,
+                max_turns: 40,
+              });
+              setCreateOpen(false);
+              router.push(`/curations/${job.id}`);
+            }),
+          )}
           className="mt-4 space-y-4"
         >
           <FormField

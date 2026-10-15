@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { useForm } from "react-hook-form";
+import { surfacedElsewhere } from "@/lib/form-submit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus } from "lucide-react";
@@ -51,11 +52,13 @@ export function TaglineCreateSheet({
           <SheetTitle>Add a tagline</SheetTitle>
         </SheetHeader>
         <form
-          onSubmit={handleSubmit(async (values) => {
-            await upsert.mutateAsync(values);
-            reset();
-            onOpenChange(false);
-          })}
+          onSubmit={surfacedElsewhere(
+            handleSubmit(async (values) => {
+              await upsert.mutateAsync(values);
+              reset();
+              onOpenChange(false);
+            }),
+          )}
           className="space-y-4"
         >
           <FormField

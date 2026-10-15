@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ComponentProps, type ComponentType } from "react";
 import { useForm } from "react-hook-form";
+import { surfacedElsewhere } from "@/lib/form-submit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
@@ -103,11 +104,13 @@ export const TextJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
   return (
     <form
       className={FORM_CLASS}
-      onSubmit={form.handleSubmit(async (values) => {
-        await onSubmit({ mode: "text", ...values });
-        form.reset();
-        onCreated();
-      })}
+      onSubmit={surfacedElsewhere(
+        form.handleSubmit(async (values) => {
+          await onSubmit({ mode: "text", ...values });
+          form.reset();
+          onCreated();
+        }),
+      )}
     >
       <MetaFields
         idPrefix="jd-text"
@@ -146,11 +149,13 @@ export const UrlJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated 
   return (
     <form
       className={FORM_CLASS}
-      onSubmit={form.handleSubmit(async (values) => {
-        await onSubmit({ mode: "url", ...values });
-        form.reset();
-        onCreated();
-      })}
+      onSubmit={surfacedElsewhere(
+        form.handleSubmit(async (values) => {
+          await onSubmit({ mode: "url", ...values });
+          form.reset();
+          onCreated();
+        }),
+      )}
     >
       <MetaFields
         idPrefix="jd-url"
@@ -207,7 +212,7 @@ export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
   }
 
   return (
-    <form onSubmit={handleSubmit} className={FORM_CLASS}>
+    <form onSubmit={surfacedElsewhere(handleSubmit)} className={FORM_CLASS}>
       <MetaFields idPrefix="jd-file" title={{ name: "title" }} company={{ name: "company" }} />
       <FormField
         label="File"
