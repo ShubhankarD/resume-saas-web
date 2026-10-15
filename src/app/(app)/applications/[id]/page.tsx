@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { BackLink } from "@/components/ui/back-link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
+import { ExternalLink, RefreshCw } from "lucide-react";
 import {
   useApplication,
   useCancelApplication,
@@ -11,9 +11,10 @@ import {
   useApplicationScreenshot,
 } from "@/hooks/use-applications";
 import { useJobProgress } from "@/hooks/use-job-progress";
-import { applicationStreamPath, isCancellableApplicationStatus } from "@/lib/api/applications";
+import { applicationStreamPath } from "@/lib/api/applications";
+import { isTerminalStatus } from "@/lib/domain/job-status";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { PageToolbar } from "@/components/ui/page-toolbar";
 import { ErrorMessage } from "@/components/content/error-message";
 import { JobActivityFeed } from "@/components/jobs/job-activity-feed";
@@ -26,14 +27,6 @@ function jobDomain(url: string): string {
   }
 }
 
-function statusVariant(status: string) {
-  if (status === "submitted") return "default" as const;
-  if (status === "failed" || status === "cancelled" || status === "expired") {
-    return "destructive" as const;
-  }
-  return "secondary" as const;
-}
-
 /**
  * Apply job detail: the live browser session (once one exists) plus F6's
  * shared JobActivityFeed, then Cancel / Confirm-submit — the two actions
@@ -42,12 +35,10 @@ function statusVariant(status: string) {
  * inside the embedded session, and this page's Confirm-submit button is
  * just how that fact gets recorded afterward.
  *
- * `isCancellableApplicationStatus` doubles as "is this job non-terminal" —
- * the backend's own `_CANCELLABLE_STATUSES` tuple (queued/running/filling/
- * awaiting_review) *is* the non-terminal set by definition, so there is no
- * separate NON_TERMINAL_STATUSES here the way curation's detail page has
- * one; using the same predicate for both the stream latch and the Cancel
- * button's visibility keeps them from silently drifting apart.
+ * Terminal/cancellable both come from the shared status table
+ * (lib/domain/job-status.ts), where an application's cancellable set is by
+ * definition its non-terminal set — so the stream latch and the Cancel
+ * button's visibility can't silently drift apart.
  *
  * Same one-way `hasStreamed` latch as curation's detail page, and for the
  * identical documented reason: `useApplication`'s poll can observe a
@@ -64,7 +55,7 @@ export default function ApplicationDetailPage() {
   const confirmSubmit = useConfirmSubmitApplication(applicationId);
   const screenshot = useApplicationScreenshot(applicationId);
 
-  const isNonTerminal = application ? isCancellableApplicationStatus(application.status) : false;
+  const isNonTerminal = application ? !isTerminalStatus("application", application.status) : false;
 
   const [hasStreamed, setHasStreamed] = useState(false);
   useEffect(() => {
@@ -91,13 +82,7 @@ export default function ApplicationDetailPage() {
         className="-mx-4 -mt-5 w-auto px-4 md:-mx-6 md:-mt-6 md:px-6 lg:-mx-8 lg:px-8"
         left={
           <div className="flex min-w-0 items-center gap-2">
-            <Link
-              href="/applications"
-              aria-label="Back to applications"
-              className="focus-visible:ring-ring/50 -ml-1 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-            </Link>
+            <BackLink href="/applications" label="Back to applications" className="-ml-1" />
             <div className="min-w-0">
               <p
                 data-testid="application-job-domain"
@@ -122,12 +107,11 @@ export default function ApplicationDetailPage() {
         right={
           application ? (
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <Badge
+              <StatusBadge
                 data-testid="application-status-badge"
-                variant={statusVariant(application.status)}
-              >
-                {application.status}
-              </Badge>
+                kind="application"
+                status={application.status}
+              />
               {canCancel && (
                 <Button
                   variant="outline"

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { BackLink } from "@/components/ui/back-link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { useJd } from "@/hooks/use-jds";
 import { useProfiles } from "@/hooks/use-profiles";
 import { useCreateEvaluation } from "@/hooks/use-evaluations";
@@ -14,6 +14,7 @@ import { PageToolbar } from "@/components/ui/page-toolbar";
 import { SectionHeader } from "@/components/ui/page-header";
 import { ErrorMessage } from "@/components/content/error-message";
 import { EvaluationResults } from "@/components/evaluations/evaluation-results";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /**
  * JD detail: shows the stored JD text plus a "pick a profile, run an
@@ -47,13 +48,7 @@ export default function JdDetailPage() {
         className="-mx-4 -mt-5 w-auto px-4 md:-mx-6 md:-mt-6 md:px-6 lg:-mx-8 lg:px-8"
         left={
           <>
-            <Link
-              href="/jds"
-              aria-label="Back to job descriptions"
-              className="focus-visible:ring-ring/50 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-            </Link>
+            <BackLink href="/jds" label="Back to job descriptions" />
             <div className="min-w-0">
               <h1 className="truncate text-xl font-bold tracking-[-0.02em] text-slate-900 sm:text-2xl dark:text-slate-50">
                 {isLoading ? "Loading…" : (jd?.title ?? "Untitled")}
@@ -97,10 +92,10 @@ export default function JdDetailPage() {
                 >
                   Profile
                 </label>
-                <select
+                <NativeSelect
                   id="evaluate-profile-select"
                   data-testid="evaluate-profile-select"
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700 dark:focus:border-slate-600 dark:focus:ring-white/10"
+                  className="w-full"
                   value={profileId}
                   onChange={(e) => setProfileId(e.target.value)}
                 >
@@ -110,7 +105,7 @@ export default function JdDetailPage() {
                       {p.label} ({p.name})
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   Which tailored resume should be scored against this role?
                 </p>

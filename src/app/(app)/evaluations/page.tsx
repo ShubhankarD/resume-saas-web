@@ -7,7 +7,7 @@ import { useEvaluations } from "@/hooks/use-evaluations";
 import { useJds } from "@/hooks/use-jds";
 import { useProfiles } from "@/hooks/use-profiles";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,18 +15,13 @@ import { PageToolbar } from "@/components/ui/page-toolbar";
 import { CompactTabs } from "@/components/ui/compact-tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorMessage } from "@/components/content/error-message";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** Flat history of every evaluation this user has run (GET
  * /api/v1/evaluations/ has no profile/JD filter server-side, same as
  * builds — see use-evaluations.ts). Profile/JD names are joined in
  * client-side from the already-fetched lists rather than added to the
  * summary response. */
-function statusVariant(status: string): "default" | "secondary" | "destructive" {
-  if (status === "completed") return "default";
-  if (status === "failed") return "destructive";
-  return "secondary";
-}
-
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("en-US", {
     month: "short",
@@ -150,18 +145,17 @@ export default function EvaluationsListPage() {
               <label htmlFor="evaluations-sort" className="sr-only">
                 Sort evaluations
               </label>
-              <select
+              <NativeSelect
                 id="evaluations-sort"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as EvalSort)}
-                className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700 dark:focus:border-slate-600 dark:focus:ring-white/10"
               >
                 {(Object.keys(EVAL_SORT_LABELS) as EvalSort[]).map((key) => (
                   <option key={key} value={key}>
                     {EVAL_SORT_LABELS[key]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <span className="text-xs text-slate-500 tabular-nums dark:text-slate-400">
                 {visibleEvaluations.length} of {evaluations?.length ?? 0}
               </span>
@@ -232,7 +226,7 @@ export default function EvaluationsListPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
+                  <StatusBadge kind="job" status={e.status} />
                   {e.coverage_score != null ? (
                     <span className="text-xs text-slate-500 tabular-nums dark:text-slate-400">
                       Coverage {e.coverage_score}/10

@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SortableGrip, SortableRow } from "@/components/profiles/sortable-row";
 import type { ContentIn } from "@/lib/api/content";
 import type { ProfileWrite } from "@/lib/api/profiles";
-import { MAX_SKILLS_GROUPS, effectiveSkillsOrder } from "@/lib/profile-draft";
+import { MAX_SKILLS_GROUPS, ProfileSelection } from "@/lib/profile-draft";
 
 const checkboxClassName =
   "size-4 shrink-0 cursor-pointer rounded-sm border-slate-300 accent-slate-900 outline-none focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:accent-slate-100";
@@ -48,7 +48,7 @@ export function SkillsEditor({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const allKeys = Object.keys(content.skills);
-  const selected = effectiveSkillsOrder(draft, content);
+  const selected = new ProfileSelection(draft, content).skillsOrder();
   const available = allKeys.filter((key) => !selected.includes(key));
   const atLimit = selected.length >= MAX_SKILLS_GROUPS;
 

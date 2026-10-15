@@ -4,10 +4,8 @@ import { useId, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Wrench } from "lucide-react";
-import { useContent, contentQueryKey } from "@/hooks/use-content";
-import { upsertSkill, deleteSkill } from "@/lib/api/content";
+import { useContent, useSkillMutations } from "@/hooks/use-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EditorCard } from "@/components/ui/editor-card";
@@ -49,22 +47,12 @@ function toTokens(text: string): string[] {
 
 export default function SkillsPage() {
   const { data: content, isLoading, error } = useContent();
-  const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: contentQueryKey });
   const fieldId = useId();
   const searchId = useId();
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const upsertMutation = useMutation({
-    mutationFn: ({ key, label, text }: { key: string; label: string; text: string }) =>
-      upsertSkill(key, { label, text }),
-    onSuccess: invalidate,
-  });
-  const deleteMutation = useMutation({
-    mutationFn: (key: string) => deleteSkill(key),
-    onSuccess: invalidate,
-  });
+  const { upsert: upsertMutation, remove: deleteMutation } = useSkillMutations();
 
   const {
     register,

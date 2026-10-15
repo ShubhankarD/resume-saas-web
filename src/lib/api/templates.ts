@@ -10,6 +10,5 @@ import type { components } from "@/lib/api/schema";
 export type TemplateInfo = components["schemas"]["TemplateInfo"];
 
 export async function listTemplates(): Promise<TemplateInfo[]> {
-  const data = await apiFetch("/api/v1/templates/", { method: "get" });
-  return data as unknown as TemplateInfo[];
+  return apiFetch("/api/v1/templates/", { method: "get" });
 }

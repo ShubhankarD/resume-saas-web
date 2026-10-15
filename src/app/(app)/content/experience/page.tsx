@@ -1,26 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, Plus } from "lucide-react";
-import { useContent, contentQueryKey } from "@/hooks/use-content";
-import {
-  createRole,
-  updateRole,
-  deleteRole,
-  createGroup,
-  updateGroup,
-  deleteGroup,
-  createBullet,
-  updateBullet,
-  deleteBullet,
-  type RoleCreate,
-  type RoleUpdate,
-  type GroupCreate,
-  type GroupUpdate,
-  type BulletCreate,
-  type BulletUpdate,
-} from "@/lib/api/content";
+import { useContent, useCreateRole } from "@/hooks/use-content";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -33,94 +15,14 @@ import { ContentSkeleton, NoContentRecord } from "@/components/content/content-s
 /**
  * The nested roles -> groups -> bullets editor (plans/phase-F3-content-editor.md).
  * Every add/edit/delete here calls the granular CRUD endpoints
- * (app/api/content.py) directly — never a full `PUT /content/` — and
- * invalidates the shared `content` query afterward so every view (this
- * page, the overview counts, YAML export) reflects real backend state.
+ * (app/api/content.py) directly — never a full `PUT /content/` — via the
+ * scoped mutation hooks in use-content.ts, which invalidate the shared
+ * `content` query afterward.
  */
 export default function ExperiencePage() {
   const { data: content, isLoading, error } = useContent();
-  const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
-
-  function invalidate() {
-    return queryClient.invalidateQueries({ queryKey: contentQueryKey });
-  }
-
-  const createRoleMutation = useMutation({
-    mutationFn: (body: RoleCreate) => createRole(body),
-    onSuccess: invalidate,
-  });
-  const updateRoleMutation = useMutation({
-    mutationFn: ({ roleId, body }: { roleId: string; body: RoleUpdate }) =>
-      updateRole(roleId, body),
-    onSuccess: invalidate,
-  });
-  const deleteRoleMutation = useMutation({
-    mutationFn: (roleId: string) => deleteRole(roleId),
-    onSuccess: invalidate,
-  });
-
-  const createGroupMutation = useMutation({
-    mutationFn: ({ roleId, body }: { roleId: string; body: GroupCreate }) =>
-      createGroup(roleId, body),
-    onSuccess: invalidate,
-  });
-  const updateGroupMutation = useMutation({
-    mutationFn: ({
-      roleId,
-      groupId,
-      body,
-    }: {
-      roleId: string;
-      groupId: string;
-      body: GroupUpdate;
-    }) => updateGroup(roleId, groupId, body),
-    onSuccess: invalidate,
-  });
-  const deleteGroupMutation = useMutation({
-    mutationFn: ({ roleId, groupId }: { roleId: string; groupId: string }) =>
-      deleteGroup(roleId, groupId),
-    onSuccess: invalidate,
-  });
-
-  const createBulletMutation = useMutation({
-    mutationFn: ({
-      roleId,
-      groupId,
-      body,
-    }: {
-      roleId: string;
-      groupId: string;
-      body: BulletCreate;
-    }) => createBullet(roleId, groupId, body),
-    onSuccess: invalidate,
-  });
-  const updateBulletMutation = useMutation({
-    mutationFn: ({
-      roleId,
-      groupId,
-      bulletId,
-      body,
-    }: {
-      roleId: string;
-      groupId: string;
-      bulletId: string;
-      body: BulletUpdate;
-    }) => updateBullet(roleId, groupId, bulletId, body),
-    onSuccess: invalidate,
-  });
-  const deleteBulletMutation = useMutation({
-    mutationFn: ({
-      roleId,
-      groupId,
-      bulletId,
-    }: {
-      roleId: string;
-      groupId: string;
-      bulletId: string;
-    }) => deleteBullet(roleId, groupId, bulletId),
-    onSuccess: invalidate,
-  });
+  const createRoleMutation = useCreateRole();
 
   const header = (action?: React.ReactNode) => (
     <PageHeader
@@ -217,26 +119,7 @@ export default function ExperiencePage() {
           </div>
 
           {content.experience.map((role) => (
-            <RoleEditor
-              key={role.id}
-              role={role}
-              onUpdateRole={(body) => updateRoleMutation.mutateAsync({ roleId: role.id, body })}
-              onDeleteRole={() => deleteRoleMutation.mutate(role.id)}
-              onCreateGroup={(body) => createGroupMutation.mutateAsync({ roleId: role.id, body })}
-              onUpdateGroup={(groupId, body) =>
-                updateGroupMutation.mutateAsync({ roleId: role.id, groupId, body })
-              }
-              onDeleteGroup={(groupId) => deleteGroupMutation.mutate({ roleId: role.id, groupId })}
-              onCreateBullet={(groupId, body) =>
-                createBulletMutation.mutateAsync({ roleId: role.id, groupId, body })
-              }
-              onUpdateBullet={(groupId, bulletId, body) =>
-                updateBulletMutation.mutateAsync({ roleId: role.id, groupId, bulletId, body })
-              }
-              onDeleteBullet={(groupId, bulletId) =>
-                deleteBulletMutation.mutate({ roleId: role.id, groupId, bulletId })
-              }
-            />
+            <RoleEditor key={role.id} role={role} />
           ))}
         </div>
       )}

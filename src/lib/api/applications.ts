@@ -1,4 +1,4 @@
-import { apiFetch, authFetch } from "@/lib/api/client";
+import { apiFetch, authFetch, buildPath } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 
 /**
@@ -35,7 +35,7 @@ import type { components } from "@/lib/api/schema";
  * - `confirm_submit_application` only acts when status === "awaiting_review"
  *   (a no-op otherwise); `cancel_application` acts from queued/running/
  *   filling/awaiting_review (`_CANCELLABLE_STATUSES` in that file, mirrored
- *   as CANCELLABLE_APPLICATION_STATUSES below) and is a no-op from any
+ *   in lib/domain/job-status.ts) and is a no-op from any
  *   terminal status. Both are pure bookkeeping plus container teardown —
  *   neither ever clicks anything inside the browser session; the human
  *   clicks the real Submit button themselves (see CLAUDE.md).
@@ -49,67 +49,50 @@ export type ApplicationSummary = components["schemas"]["ApplicationSummary"];
 export type ApplicationResponse = components["schemas"]["ApplicationResponse"];
 export type ApplicationCreate = components["schemas"]["ApplicationCreate"];
 
-/** Mirrors app/services/application_service.py's `_CANCELLABLE_STATUSES`
- * exactly — keep in sync by hand if that tuple ever changes, same
- * discipline apply_runner/progress.py's own docstring asks of itself. */
-export const CANCELLABLE_APPLICATION_STATUSES = [
-  "queued",
-  "running",
-  "filling",
-  "awaiting_review",
-] as const;
-
-export function isCancellableApplicationStatus(status: string): boolean {
-  return (CANCELLABLE_APPLICATION_STATUSES as readonly string[]).includes(status);
-}
-
 export async function listApplications(): Promise<ApplicationSummary[]> {
-  const data = await apiFetch("/api/v1/applications/", { method: "get" });
-  return data as unknown as ApplicationSummary[];
+  return apiFetch("/api/v1/applications/", { method: "get" });
 }
 
 export async function getApplication(applicationId: string): Promise<ApplicationResponse> {
-  const data = await apiFetch(
-    `/api/v1/applications/${encodeURIComponent(applicationId)}` as "/api/v1/applications/{application_id}",
-    { method: "get" },
-  );
-  return data as unknown as ApplicationResponse;
+  return apiFetch("/api/v1/applications/{application_id}", {
+    params: { application_id: applicationId },
+    method: "get",
+  });
 }
 
 export async function createApplication(body: ApplicationCreate): Promise<ApplicationResponse> {
-  const data = await apiFetch("/api/v1/applications/", { method: "post", body });
-  return data as unknown as ApplicationResponse;
+  return apiFetch("/api/v1/applications/", { method: "post", body });
 }
 
 export async function deleteApplication(applicationId: string): Promise<void> {
-  await apiFetch(
-    `/api/v1/applications/${encodeURIComponent(applicationId)}` as "/api/v1/applications/{application_id}",
-    { method: "delete" },
-  );
+  await apiFetch("/api/v1/applications/{application_id}", {
+    params: { application_id: applicationId },
+    method: "delete",
+  });
 }
 
 export async function cancelApplication(applicationId: string): Promise<ApplicationResponse> {
-  const data = await apiFetch(
-    `/api/v1/applications/${encodeURIComponent(applicationId)}/cancel` as "/api/v1/applications/{application_id}/cancel",
-    { method: "post" },
-  );
-  return data as unknown as ApplicationResponse;
+  return apiFetch("/api/v1/applications/{application_id}/cancel", {
+    params: { application_id: applicationId },
+    method: "post",
+  });
 }
 
 export async function confirmSubmitApplication(
   applicationId: string,
 ): Promise<ApplicationResponse> {
-  const data = await apiFetch(
-    `/api/v1/applications/${encodeURIComponent(applicationId)}/confirm-submit` as "/api/v1/applications/{application_id}/confirm-submit",
-    { method: "post" },
-  );
-  return data as unknown as ApplicationResponse;
+  return apiFetch("/api/v1/applications/{application_id}/confirm-submit", {
+    params: { application_id: applicationId },
+    method: "post",
+  });
 }
 
 /** Path (not full URL) for an application job's SSE stream — passed to
  * useJobProgress(), same pattern as curationStreamPath. */
 export function applicationStreamPath(applicationId: string): string {
-  return `/api/v1/applications/${encodeURIComponent(applicationId)}/stream`;
+  return buildPath("/api/v1/applications/{application_id}/stream", {
+    application_id: applicationId,
+  });
 }
 
 /**
@@ -131,7 +114,9 @@ export function applicationStreamPath(applicationId: string): string {
  */
 export async function fetchApplicationScreenshotUrl(applicationId: string): Promise<string> {
   const response = await authFetch(
-    `/api/v1/applications/${encodeURIComponent(applicationId)}/screenshot`,
+    buildPath("/api/v1/applications/{application_id}/screenshot", {
+      application_id: applicationId,
+    }),
   );
   if (!response.ok) {
     throw new Error(`screenshot request failed with status ${response.status}`);

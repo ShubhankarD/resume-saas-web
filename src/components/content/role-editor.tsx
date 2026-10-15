@@ -14,14 +14,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
 import { ErrorMessage } from "@/components/content/error-message";
 import { GroupEditor } from "@/components/content/group-editor";
-import type {
-  RoleIn,
-  RoleUpdate,
-  GroupCreate,
-  GroupUpdate,
-  BulletCreate,
-  BulletUpdate,
-} from "@/lib/api/content";
+import { useRoleActions } from "@/hooks/use-content";
+import type { RoleIn, RoleUpdate } from "@/lib/api/content";
 
 const roleUpdateSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
@@ -39,27 +33,11 @@ const groupCreateSchema = z.object({
 });
 type GroupCreateFormValues = z.infer<typeof groupCreateSchema>;
 
-export function RoleEditor({
-  role,
-  onUpdateRole,
-  onDeleteRole,
-  onCreateGroup,
-  onUpdateGroup,
-  onDeleteGroup,
-  onCreateBullet,
-  onUpdateBullet,
-  onDeleteBullet,
-}: {
-  role: RoleIn;
-  onUpdateRole: (body: RoleUpdate) => Promise<unknown>;
-  onDeleteRole: () => void;
-  onCreateGroup: (body: GroupCreate) => Promise<unknown>;
-  onUpdateGroup: (groupId: string, body: GroupUpdate) => Promise<unknown>;
-  onDeleteGroup: (groupId: string) => void;
-  onCreateBullet: (groupId: string, body: BulletCreate) => Promise<unknown>;
-  onUpdateBullet: (groupId: string, bulletId: string, body: BulletUpdate) => Promise<unknown>;
-  onDeleteBullet: (groupId: string, bulletId: string) => void;
-}) {
+/** One role card. Owns its role-scoped mutations (useRoleActions) rather
+ * than taking them as callbacks; each GroupEditor does the same for its
+ * group, so ids never need threading through props. */
+export function RoleEditor({ role }: { role: RoleIn }) {
+  const actions = useRoleActions(role.id);
   const fieldId = useId();
   const [groupCreateError, setGroupCreateError] = useState<unknown>(null);
   const [roleUpdateError, setRoleUpdateError] = useState<unknown>(null);
@@ -91,14 +69,19 @@ export function RoleEditor({
       title={role.title || "Untitled role"}
       subtitle={role.org || undefined}
       meta={role.dates || undefined}
-      actions={<ConfirmDeleteButton label={`role ${role.title}`} onConfirm={onDeleteRole} />}
+      actions={
+        <ConfirmDeleteButton
+          label={`role ${role.title}`}
+          onConfirm={() => actions.remove.mutate()}
+        />
+      }
     >
       <div className="space-y-6">
         <form
           onSubmit={handleRoleSubmit(async (values) => {
             setRoleUpdateError(null);
             try {
-              await onUpdateRole(values);
+              await actions.update.mutateAsync(values);
             } catch (err) {
               setRoleUpdateError(err);
             }
@@ -198,15 +181,7 @@ export function RoleEditor({
           ) : (
             <Accordion>
               {role.groups.map((group) => (
-                <GroupEditor
-                  key={group.id}
-                  group={group}
-                  onUpdateGroup={(body) => onUpdateGroup(group.id, body)}
-                  onDeleteGroup={() => onDeleteGroup(group.id)}
-                  onCreateBullet={(body) => onCreateBullet(group.id, body)}
-                  onUpdateBullet={(bulletId, body) => onUpdateBullet(group.id, bulletId, body)}
-                  onDeleteBullet={(bulletId) => onDeleteBullet(group.id, bulletId)}
-                />
+                <GroupEditor key={group.id} roleId={role.id} group={group} />
               ))}
             </Accordion>
           )}
@@ -216,7 +191,7 @@ export function RoleEditor({
               onSubmit={handleGroupSubmit(async (values) => {
                 setGroupCreateError(null);
                 try {
-                  await onCreateGroup({
+                  await actions.createGroup.mutateAsync({
                     id: values.id,
                     heading: values.heading.trim() ? values.heading.trim() : undefined,
                   });

@@ -17,26 +17,23 @@ export type EvaluationResponse = components["schemas"]["EvaluationResponse"];
 export type EvaluationCreate = components["schemas"]["EvaluationCreate"];
 
 export async function listEvaluations(): Promise<EvaluationSummary[]> {
-  const data = await apiFetch("/api/v1/evaluations/", { method: "get" });
-  return data as unknown as EvaluationSummary[];
+  return apiFetch("/api/v1/evaluations/", { method: "get" });
 }
 
 export async function getEvaluation(evaluationId: string): Promise<EvaluationResponse> {
-  const data = await apiFetch(
-    `/api/v1/evaluations/${encodeURIComponent(evaluationId)}` as "/api/v1/evaluations/{evaluation_id}",
-    { method: "get" },
-  );
-  return data as unknown as EvaluationResponse;
+  return apiFetch("/api/v1/evaluations/{evaluation_id}", {
+    params: { evaluation_id: evaluationId },
+    method: "get",
+  });
 }
 
 export async function createEvaluation(body: EvaluationCreate): Promise<EvaluationResponse> {
-  const data = await apiFetch("/api/v1/evaluations/", { method: "post", body });
-  return data as unknown as EvaluationResponse;
+  return apiFetch("/api/v1/evaluations/", { method: "post", body });
 }
 
 export async function deleteEvaluation(evaluationId: string): Promise<void> {
-  await apiFetch(
-    `/api/v1/evaluations/${encodeURIComponent(evaluationId)}` as "/api/v1/evaluations/{evaluation_id}",
-    { method: "delete" },
-  );
+  await apiFetch("/api/v1/evaluations/{evaluation_id}", {
+    params: { evaluation_id: evaluationId },
+    method: "delete",
+  });
 }

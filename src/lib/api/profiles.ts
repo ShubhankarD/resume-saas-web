@@ -1,4 +1,4 @@
-import { apiFetch, authFetch, throwIfNotOk } from "@/lib/api/client";
+import { apiFetch, authFetch, buildPath, throwIfNotOk } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 
 /**
@@ -35,7 +35,7 @@ export type SkillOverrideIn = components["schemas"]["SkillOverrideIn"];
 /** GET /api/v1/profiles/ returns a summary, not the full ProfileWrite shape
  * (see profile_service._profile_summary) — id/name/label/output/tagline/
  * density/max_pages only. */
-export interface ProfileSummary {
+export type ProfileSummary = {
   id: string;
   name: string;
   label: string;
@@ -43,50 +43,56 @@ export interface ProfileSummary {
   tagline: string;
   density: string;
   max_pages: number;
-}
+};
 
 export async function listProfiles(): Promise<ProfileSummary[]> {
   const data = await apiFetch("/api/v1/profiles/", { method: "get" });
-  return data as unknown as ProfileSummary[];
+  return data as ProfileSummary[];
 }
 
+/** POST /api/v1/profiles/ responds with `_profile_to_dict()`, which has no
+ * `id` (profile_service.create_profile) — so the new row's id is looked up
+ * from the summary list by `name`, which the backend keeps unique per user
+ * (`_check_name_available`). Drop the lookup once the create response
+ * includes `id`. */
 export async function createProfile(body: ProfileWrite): Promise<ProfileWrite & { id: string }> {
-  const data = await apiFetch("/api/v1/profiles/", { method: "post", body });
-  return data as unknown as ProfileWrite & { id: string };
+  const created = (await apiFetch("/api/v1/profiles/", { method: "post", body })) as ProfileWrite;
+  const summary = (await listProfiles()).find((p) => p.name === created.name);
+  if (!summary) throw new Error(`Created profile "${created.name}" not found in profile list`);
+  return { ...created, id: summary.id };
 }
 
 export async function getProfile(profileId: string): Promise<ProfileWrite> {
-  const data = await apiFetch(
-    `/api/v1/profiles/${encodeURIComponent(profileId)}` as "/api/v1/profiles/{profile_id}",
-    { method: "get" },
-  );
-  return data as unknown as ProfileWrite;
+  const data = await apiFetch("/api/v1/profiles/{profile_id}", {
+    params: { profile_id: profileId },
+    method: "get",
+  });
+  return data as ProfileWrite;
 }
 
 export async function updateProfile(profileId: string, body: ProfileWrite): Promise<ProfileWrite> {
-  const data = await apiFetch(
-    `/api/v1/profiles/${encodeURIComponent(profileId)}` as "/api/v1/profiles/{profile_id}",
-    { method: "put", body },
-  );
-  return data as unknown as ProfileWrite;
+  const data = await apiFetch("/api/v1/profiles/{profile_id}", {
+    params: { profile_id: profileId },
+    method: "put",
+    body,
+  });
+  return data as ProfileWrite;
 }
 
-export async function patchProfile(
-  profileId: string,
-  body: ProfilePatch,
-): Promise<ProfileWrite> {
-  const data = await apiFetch(
-    `/api/v1/profiles/${encodeURIComponent(profileId)}` as "/api/v1/profiles/{profile_id}",
-    { method: "patch", body },
-  );
-  return data as unknown as ProfileWrite;
+export async function patchProfile(profileId: string, body: ProfilePatch): Promise<ProfileWrite> {
+  const data = await apiFetch("/api/v1/profiles/{profile_id}", {
+    params: { profile_id: profileId },
+    method: "patch",
+    body,
+  });
+  return data as ProfileWrite;
 }
 
 export async function deleteProfile(profileId: string): Promise<void> {
-  await apiFetch(
-    `/api/v1/profiles/${encodeURIComponent(profileId)}` as "/api/v1/profiles/{profile_id}",
-    { method: "delete" },
-  );
+  await apiFetch("/api/v1/profiles/{profile_id}", {
+    params: { profile_id: profileId },
+    method: "delete",
+  });
 }
 
 /**
@@ -100,9 +106,12 @@ export async function deleteProfile(profileId: string): Promise<void> {
  * still apply.
  */
 export async function previewProfile(profileId: string): Promise<string> {
-  const response = await authFetch(`/api/v1/profiles/${encodeURIComponent(profileId)}/preview`, {
-    method: "POST",
-  });
+  const response = await authFetch(
+    buildPath("/api/v1/profiles/{profile_id}/preview", { profile_id: profileId }),
+    {
+      method: "POST",
+    },
+  );
   await throwIfNotOk(response);
   return response.text();
 }

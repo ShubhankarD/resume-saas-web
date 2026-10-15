@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { BackLink } from "@/components/ui/back-link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { useCuration, useCancelCuration } from "@/hooks/use-curations";
 import { useJobProgress } from "@/hooks/use-job-progress";
 import { curationStreamPath } from "@/lib/api/curations";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { isTerminalStatus } from "@/lib/domain/job-status";
 import { PageToolbar } from "@/components/ui/page-toolbar";
 import { MetricCard } from "@/components/ui/metric-card";
 import { ErrorMessage } from "@/components/content/error-message";
 import { JobActivityFeed } from "@/components/jobs/job-activity-feed";
-
-const NON_TERMINAL_STATUSES = new Set(["pending", "running"]);
 
 /**
  * Curation job detail: shows the live agent activity feed while the job
@@ -44,7 +43,7 @@ export default function CurationDetailPage() {
   const { data: curation, isLoading, error } = useCuration(curationId);
   const cancelCuration = useCancelCuration(curationId);
 
-  const isNonTerminal = curation ? NON_TERMINAL_STATUSES.has(curation.status) : false;
+  const isNonTerminal = curation ? !isTerminalStatus("job", curation.status) : false;
 
   const [hasStreamed, setHasStreamed] = useState(false);
   useEffect(() => {
@@ -63,13 +62,7 @@ export default function CurationDetailPage() {
         className="-mx-4 -mt-5 w-auto px-4 md:-mx-6 md:-mt-6 md:px-6 lg:-mx-8 lg:px-8"
         left={
           <div className="flex min-w-0 items-center gap-2">
-            <Link
-              href="/curations"
-              aria-label="Back to curation jobs"
-              className="focus-visible:ring-ring/50 -ml-1 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 outline-none hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-3 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-            </Link>
+            <BackLink href="/curations" label="Back to curation jobs" className="-ml-1" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold tracking-[-0.01em] text-slate-900 sm:text-base dark:text-slate-50">
                 {curation?.profile_name ?? "Curation job"}
@@ -81,18 +74,11 @@ export default function CurationDetailPage() {
         right={
           curation ? (
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <Badge
+              <StatusBadge
                 data-testid="curation-status-badge"
-                variant={
-                  curation.status === "completed"
-                    ? "default"
-                    : curation.status === "failed" || curation.status === "cancelled"
-                      ? "destructive"
-                      : "secondary"
-                }
-              >
-                {curation.status}
-              </Badge>
+                kind="job"
+                status={curation.status}
+              />
               {isNonTerminal && (
                 <Button
                   variant="outline"

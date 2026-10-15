@@ -1,10 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Download, Upload } from "lucide-react";
-import { useContent, contentQueryKey } from "@/hooks/use-content";
-import { importContentYaml, downloadContentYaml } from "@/lib/api/content-upload";
+import { useContent, useImportContent } from "@/hooks/use-content";
+import { downloadContentYaml } from "@/lib/api/content-upload";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { ErrorMessage } from "@/components/content/error-message";
@@ -21,18 +20,11 @@ import { ErrorMessage } from "@/components/content/error-message";
  */
 export default function ImportExportPage() {
   const { data: content } = useContent();
-  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [downloadError, setDownloadError] = useState<unknown>(null);
   const [downloading, setDownloading] = useState(false);
 
-  const importMutation = useMutation({
-    mutationFn: (file: File) => importContentYaml(file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: contentQueryKey });
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    },
-  });
+  const importMutation = useImportContent();
 
   async function handleDownload() {
     setDownloadError(null);
@@ -80,7 +72,13 @@ export default function ImportExportPage() {
               accept=".yaml,.yml,application/x-yaml,text/yaml"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) importMutation.mutate(file);
+                if (file) {
+                  importMutation.mutate(file, {
+                    onSuccess: () => {
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    },
+                  });
+                }
               }}
               disabled={importMutation.isPending}
               data-testid="import-yaml-input"

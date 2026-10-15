@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sheet";
 import { ErrorMessage } from "@/components/content/error-message";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /**
  * Client-side UX validation only — the backend (`app/services/jd_service.py`)
@@ -383,18 +384,17 @@ export default function JdsListPage() {
               <label htmlFor="jds-sort" className="sr-only">
                 Sort job descriptions
               </label>
-              <select
+              <NativeSelect
                 id="jds-sort"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as JdSort)}
-                className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700 dark:focus:border-slate-600 dark:focus:ring-white/10"
               >
                 {(Object.keys(JD_SORT_LABELS) as JdSort[]).map((key) => (
                   <option key={key} value={key}>
                     {JD_SORT_LABELS[key]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <span className="text-xs text-slate-500 tabular-nums dark:text-slate-400">
                 {visibleJds.length} of {jds?.length ?? 0}
               </span>

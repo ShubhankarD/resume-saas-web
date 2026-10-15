@@ -23,9 +23,7 @@ export function googleAuth(body: GoogleAuthRequest) {
 }
 
 export function verifyEmail(token: string) {
-  return apiFetch(`/api/v1/auth/verify-email?token=${encodeURIComponent(token)}` as "/api/v1/auth/verify-email", {
-    method: "get",
-  });
+  return apiFetch("/api/v1/auth/verify-email", { method: "get", query: { token } });
 }
 
 export function forgotPassword(body: ForgotPasswordRequest) {

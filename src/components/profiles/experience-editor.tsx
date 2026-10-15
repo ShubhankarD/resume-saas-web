@@ -27,12 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SortableGrip, SortableRow } from "@/components/profiles/sortable-row";
 import type { ContentIn } from "@/lib/api/content";
 import type { ProfileWrite } from "@/lib/api/profiles";
-import {
-  effectiveRoleOrder,
-  groupOrderForRole,
-  rebuildGroupsOrder,
-  selectedBulletIds,
-} from "@/lib/profile-draft";
+import { ProfileSelection } from "@/lib/profile-draft";
 import { cn } from "cn";
 
 type RoleIn = ContentIn["experience"][number];
@@ -70,7 +65,8 @@ export function ExperienceEditor({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const roleOrder = effectiveRoleOrder(draft, content);
+  const selection = new ProfileSelection(draft, content);
+  const roleOrder = selection.roleOrder();
   const rolesById = new Map(content.experience.map((r) => [r.id, r]));
 
   function handleDragEnd(event: DragEndEvent) {
@@ -92,12 +88,12 @@ export function ExperienceEditor({
       const [, roleId, groupId] = activeId.split(":");
       const [, overRoleId, overGroupId] = overId.split(":");
       if (roleId !== overRoleId) return; // groups only reorder within their own role
-      const current = groupOrderForRole(draft, content, roleId);
+      const current = selection.groupOrder(roleId);
       const oldIndex = current.indexOf(groupId);
       const newIndex = current.indexOf(overGroupId);
       if (oldIndex === -1 || newIndex === -1) return;
       const newOrder = arrayMove(current, oldIndex, newIndex);
-      onChange({ groups_order: rebuildGroupsOrder(draft, content, roleId, newOrder) });
+      onChange({ groups_order: selection.groupsOrderWith(roleId, newOrder) });
       return;
     }
 
@@ -105,7 +101,7 @@ export function ExperienceEditor({
       const [, roleId, groupId, bulletId] = activeId.split(":");
       const [, overRoleId, overGroupId, overBulletId] = overId.split(":");
       if (roleId !== overRoleId || groupId !== overGroupId) return;
-      const current = selectedBulletIds(draft, content, groupId);
+      const current = selection.bulletIds(groupId);
       const oldIndex = current.indexOf(bulletId);
       const newIndex = current.indexOf(overBulletId);
       if (oldIndex === -1 || newIndex === -1) return;
@@ -166,9 +162,10 @@ function RoleCard({
   draft: ProfileWrite;
   onChange: (patch: Partial<ProfileWrite>) => void;
 }) {
-  const groupIds = groupOrderForRole(draft, content, role.id);
+  const selection = new ProfileSelection(draft, content);
+  const groupIds = selection.groupOrder(role.id);
   const includedBullets = groupIds.reduce(
-    (total, groupId) => total + selectedBulletIds(draft, content, groupId).length,
+    (total, groupId) => total + selection.bulletIds(groupId).length,
     0,
   );
 

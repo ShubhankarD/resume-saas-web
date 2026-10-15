@@ -12,7 +12,8 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
 import { ErrorMessage } from "@/components/content/error-message";
 import { BulletRow, BulletCreateForm } from "@/components/content/bullet-row";
-import type { GroupIn, GroupUpdate, BulletCreate, BulletUpdate } from "@/lib/api/content";
+import { useGroupActions } from "@/hooks/use-content";
+import type { GroupIn } from "@/lib/api/content";
 
 const groupUpdateSchema = z.object({
   heading: z.string().max(200),
@@ -25,21 +26,8 @@ type GroupUpdateFormValues = z.infer<typeof groupUpdateSchema>;
  * nesting cards inside cards is what made this editor feel like an admin
  * tool. Must be rendered inside an `<Accordion>`.
  */
-export function GroupEditor({
-  group,
-  onUpdateGroup,
-  onDeleteGroup,
-  onCreateBullet,
-  onUpdateBullet,
-  onDeleteBullet,
-}: {
-  group: GroupIn;
-  onUpdateGroup: (body: GroupUpdate) => Promise<unknown>;
-  onDeleteGroup: () => void;
-  onCreateBullet: (body: BulletCreate) => Promise<unknown>;
-  onUpdateBullet: (bulletId: string, body: BulletUpdate) => Promise<unknown>;
-  onDeleteBullet: (bulletId: string) => void;
-}) {
+export function GroupEditor({ roleId, group }: { roleId: string; group: GroupIn }) {
+  const actions = useGroupActions(roleId, group.id);
   const fieldId = useId();
   const [createError, setCreateError] = useState<unknown>(null);
   const [updateError, setUpdateError] = useState<unknown>(null);
@@ -76,7 +64,7 @@ export function GroupEditor({
           onSubmit={handleSubmit(async (values) => {
             setUpdateError(null);
             try {
-              await onUpdateGroup({
+              await actions.update.mutateAsync({
                 heading: values.heading.trim() ? values.heading.trim() : undefined,
               });
             } catch (err) {
@@ -132,8 +120,10 @@ export function GroupEditor({
                 <BulletRow
                   key={bullet.id}
                   bullet={bullet}
-                  onUpdate={(body) => onUpdateBullet(bullet.id, body)}
-                  onDelete={() => onDeleteBullet(bullet.id)}
+                  onUpdate={(body) =>
+                    actions.updateBullet.mutateAsync({ bulletId: bullet.id, body })
+                  }
+                  onDelete={() => actions.removeBullet.mutate(bullet.id)}
                 />
               ))}
             </ul>
@@ -146,7 +136,7 @@ export function GroupEditor({
               onSubmit={async (values) => {
                 setCreateError(null);
                 try {
-                  await onCreateBullet(values);
+                  await actions.createBullet.mutateAsync(values);
                   setAdding(false);
                 } catch (err) {
                   setCreateError(err);
@@ -160,7 +150,7 @@ export function GroupEditor({
         <div className="flex justify-end border-t border-slate-200 pt-4 dark:border-slate-800">
           <ConfirmDeleteButton
             label={`group ${group.heading ?? group.id}`}
-            onConfirm={onDeleteGroup}
+            onConfirm={() => actions.remove.mutate()}
           />
         </div>
       </AccordionContent>

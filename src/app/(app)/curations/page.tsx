@@ -11,7 +11,7 @@ import { useCurations, useCreateCuration, useDeleteCuration } from "@/hooks/use-
 import { useJds } from "@/hooks/use-jds";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -37,12 +37,6 @@ const createSchema = z.object({
     .regex(/^[a-z0-9][a-z0-9-_]*$/, "Use lowercase letters, numbers, - or _"),
 });
 type CreateForm = z.infer<typeof createSchema>;
-
-function statusVariant(status: string) {
-  if (status === "completed") return "default" as const;
-  if (status === "failed" || status === "cancelled") return "destructive" as const;
-  return "secondary" as const;
-}
 
 /** History of every AI curation job this user has triggered (GET
  * /api/v1/curations/ — flat, tenant-scoped, no JD filter server-side,
@@ -200,7 +194,7 @@ export default function CurationsListPage() {
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="truncate">{c.profile_name}</CardTitle>
-                  <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
+                  <StatusBadge kind="job" status={c.status} />
                 </div>
                 <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                   {jdTitle(c.jd_id)}

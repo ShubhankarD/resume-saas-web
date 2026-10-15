@@ -10,17 +10,15 @@ import {
   updateProfile,
   type ProfileWrite,
 } from "@/lib/api/profiles";
-
-export const profilesQueryKey = ["profiles"] as const;
-export const profileQueryKey = (id: string) => ["profiles", id] as const;
+import { queryKeys } from "@/lib/query-keys";
 
 export function useProfiles() {
-  return useQuery({ queryKey: profilesQueryKey, queryFn: listProfiles });
+  return useQuery({ queryKey: queryKeys.profiles.all, queryFn: listProfiles });
 }
 
 export function useProfile(profileId: string | undefined) {
   return useQuery({
-    queryKey: profileQueryKey(profileId ?? ""),
+    queryKey: queryKeys.profiles.detail(profileId ?? ""),
     queryFn: () => getProfile(profileId as string),
     enabled: Boolean(profileId),
   });
@@ -31,7 +29,7 @@ export function useCreateProfile() {
   return useMutation({
     mutationFn: (body: ProfileWrite) => createProfile(body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profilesQueryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profiles.all });
     },
   });
 }
@@ -47,8 +45,8 @@ export function useUpdateProfile(profileId: string) {
   return useMutation({
     mutationFn: (body: ProfileWrite) => updateProfile(profileId, body),
     onSuccess: (data) => {
-      queryClient.setQueryData(profileQueryKey(profileId), data);
-      queryClient.invalidateQueries({ queryKey: profilesQueryKey });
+      queryClient.setQueryData(queryKeys.profiles.detail(profileId), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.profiles.all });
     },
   });
 }
@@ -58,7 +56,7 @@ export function useDeleteProfile() {
   return useMutation({
     mutationFn: (profileId: string) => deleteProfile(profileId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profilesQueryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profiles.all });
     },
   });
 }

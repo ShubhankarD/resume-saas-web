@@ -9,12 +9,11 @@ import {
   listCurations,
   type CurationCreate,
 } from "@/lib/api/curations";
-
-export const curationsQueryKey = ["curations"] as const;
-export const curationQueryKey = (id: string) => ["curations", id] as const;
+import { queryKeys } from "@/lib/query-keys";
+import { isTerminalStatus } from "@/lib/domain/job-status";
 
 export function useCurations() {
-  return useQuery({ queryKey: curationsQueryKey, queryFn: listCurations });
+  return useQuery({ queryKey: queryKeys.curations.all, queryFn: listCurations });
 }
 
 /** Polls the job row every 3s while it's non-terminal, as a fallback/
@@ -26,12 +25,12 @@ export function useCurations() {
  * once it lands. */
 export function useCuration(curationId: string | undefined) {
   return useQuery({
-    queryKey: curationQueryKey(curationId ?? ""),
+    queryKey: queryKeys.curations.detail(curationId ?? ""),
     queryFn: () => getCuration(curationId as string),
     enabled: Boolean(curationId),
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      return status === "pending" || status === "running" ? 3000 : false;
+      return status && !isTerminalStatus("job", status) ? 3000 : false;
     },
   });
 }
@@ -47,8 +46,8 @@ export function useCreateCuration() {
   return useMutation({
     mutationFn: (body: CurationCreate) => createCuration(body),
     onSuccess: (data) => {
-      queryClient.setQueryData(curationQueryKey(data.id), data);
-      queryClient.invalidateQueries({ queryKey: curationsQueryKey });
+      queryClient.setQueryData(queryKeys.curations.detail(data.id), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.curations.all });
     },
   });
 }
@@ -58,7 +57,7 @@ export function useDeleteCuration() {
   return useMutation({
     mutationFn: (curationId: string) => deleteCuration(curationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: curationsQueryKey });
+      queryClient.invalidateQueries({ queryKey: queryKeys.curations.all });
     },
   });
 }
@@ -68,8 +67,8 @@ export function useCancelCuration(curationId: string) {
   return useMutation({
     mutationFn: () => cancelCuration(curationId),
     onSuccess: (data) => {
-      queryClient.setQueryData(curationQueryKey(curationId), data);
-      queryClient.invalidateQueries({ queryKey: curationsQueryKey });
+      queryClient.setQueryData(queryKeys.curations.detail(curationId), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.curations.all });
     },
   });
 }
