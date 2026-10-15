@@ -26,8 +26,8 @@ export function ContentSectionPage({
   description: string;
   /** Names the section in the "no content record yet" message. */
   section: string;
-  /** Header action, shown only once content has loaded. */
-  action?: ReactNode;
+  /** Header action, shown only once content has loaded. A function receives the loaded content. */
+  action?: ReactNode | ((content: ContentIn) => ReactNode);
   children: (content: ContentIn) => ReactNode;
 }) {
   const { data: content, isLoading, error } = useContent();
@@ -68,7 +68,7 @@ export function ContentSectionPage({
 
   return (
     <div className="space-y-6">
-      {header(action)}
+      {header(typeof action === "function" ? action(content) : action)}
       {children(content)}
     </div>
   );

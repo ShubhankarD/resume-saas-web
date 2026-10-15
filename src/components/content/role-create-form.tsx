@@ -9,15 +9,14 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { ErrorMessage } from "@/components/content/error-message";
 import type { RoleCreate } from "@/lib/api/content";
+import { contentKeySchema } from "@/lib/domain/content-key";
 
 function makeRoleSchema(existingIds: string[]) {
   return z.object({
-    id: z
-      .string()
-      .min(1, "Id is required")
-      .max(80)
-      .regex(/^[a-z0-9][a-z0-9-_]*$/, "Use lowercase letters, numbers, - or _")
-      .refine((id) => !existingIds.includes(id), "That id is already used"),
+    id: contentKeySchema("Id is required").refine(
+      (id) => !existingIds.includes(id),
+      "That id is already used",
+    ),
     title: z.string().min(1, "Title is required").max(200),
     org: z.string().min(1, "Organization is required").max(200),
     dates: z.string().min(1, "Dates are required").max(100),
