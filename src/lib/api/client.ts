@@ -2,7 +2,7 @@ import type { paths } from "./schema";
 import { createHttpClient, bearerAuth } from "@/lib/api/http";
 import { browserAuthSession } from "@/lib/auth/session";
 
-export { ApiError, getErrorMessage, throwIfNotOk } from "@/lib/api/http";
+export { ApiError, getErrorField, getErrorMessage, throwIfNotOk } from "@/lib/api/http";
 
 /**
  * Base URL of the resume-saas backend API, e.g. http://localhost:8000.

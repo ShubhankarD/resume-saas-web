@@ -51,6 +51,22 @@ export function getErrorMessage(err: unknown, fallback = "Something went wrong")
   return fallback;
 }
 
+/**
+ * The input a field-scoped backend error belongs to: the `field` key of an
+ * `{"detail": "...", "field": "url"}` body (app/api/errors.py). Returns
+ * `undefined` for every other error, including FastAPI's own validation
+ * arrays, which carry no top-level `field`.
+ */
+export function getErrorField(err: unknown): string | undefined {
+  if (!(err instanceof ApiError)) return undefined;
+  const body = err.body;
+  if (body && typeof body === "object" && "field" in body) {
+    const field = (body as { field?: unknown }).field;
+    if (typeof field === "string" && field !== "") return field;
+  }
+  return undefined;
+}
+
 /** Reads a response body as JSON when the server says it's JSON, else text.
  * An empty body reads as `undefined` — the backend's 204s still carry
  * `content-type: application/json`, and `response.json()` on an empty body

@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
 import { SheetClose } from "@/components/ui/sheet";
 import { ErrorMessage } from "@/components/content/error-message";
+import { useServerFieldError } from "@/hooks/use-server-field-error";
 
 /**
  * The three ways to add a job description. They all feed the *same*
@@ -96,6 +97,9 @@ const FORM_CLASS = "flex flex-col gap-4";
 
 export const TextJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated }) => {
   const form = useForm<TextValues>({ resolver: zodResolver(textSchema) });
+  const generalError = useServerFieldError(error, ["text"], ({ field, message }) =>
+    form.setError(field as keyof TextValues, { type: "server", message }),
+  );
   return (
     <form
       className={FORM_CLASS}
@@ -123,7 +127,7 @@ export const TextJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
           {...form.register("text")}
         />
       </FormField>
-      <ErrorMessage error={error} />
+      <ErrorMessage error={generalError} />
       <FormActions
         isPending={isPending}
         testId="create-jd-submit-text"
@@ -136,6 +140,9 @@ export const TextJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
 
 export const UrlJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated }) => {
   const form = useForm<UrlValues>({ resolver: zodResolver(urlSchema) });
+  const generalError = useServerFieldError(error, ["url"], ({ field, message }) =>
+    form.setError(field as keyof UrlValues, { type: "server", message }),
+  );
   return (
     <form
       className={FORM_CLASS}
@@ -163,7 +170,7 @@ export const UrlJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated 
           {...form.register("url")}
         />
       </FormField>
-      <ErrorMessage error={error} />
+      <ErrorMessage error={generalError} />
       <FormActions
         isPending={isPending}
         testId="create-jd-submit-url"
@@ -177,10 +184,15 @@ export const UrlJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated 
 export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = useState<unknown>(null);
+  const [serverFileError, setServerFileError] = useState<string>();
+  const generalError = useServerFieldError(error, ["file"], ({ message }) =>
+    setServerFileError(message),
+  );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFileError(null);
+    setServerFileError(undefined);
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
       setFileError(new Error("Choose a file to upload"));
@@ -197,7 +209,13 @@ export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
   return (
     <form onSubmit={handleSubmit} className={FORM_CLASS}>
       <MetaFields idPrefix="jd-file" title={{ name: "title" }} company={{ name: "company" }} />
-      <FormField label="File" htmlFor="jd-file-input" hint="PDF, DOCX, or plain text" required>
+      <FormField
+        label="File"
+        htmlFor="jd-file-input"
+        hint="PDF, DOCX, or plain text"
+        error={serverFileError}
+        required
+      >
         <input
           ref={fileInputRef}
           id="jd-file-input"
@@ -207,7 +225,7 @@ export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
         />
       </FormField>
       <ErrorMessage error={fileError} />
-      <ErrorMessage error={error} />
+      <ErrorMessage error={generalError} />
       <FormActions
         isPending={isPending}
         testId="create-jd-submit-file"
