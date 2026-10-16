@@ -99,7 +99,9 @@ export function BuildHistory({ profileId }: { profileId: string }) {
             </p>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               {build.status}
-              {build.page_count != null ? ` · ${build.page_count} page${build.page_count === 1 ? "" : "s"}` : ""}
+              {build.page_count != null
+                ? ` · ${build.page_count} page${build.page_count === 1 ? "" : "s"}`
+                : ""}
             </p>
           </div>
 

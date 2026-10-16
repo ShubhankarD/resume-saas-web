@@ -4,7 +4,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FileText } from "lucide-react";
 import { ErrorMessage } from "@/components/content/error-message";
 import { EmptyState } from "@/components/ui/empty-state";
-import { DEFAULT_ZOOM, PreviewToolbar, type ZoomLevel } from "@/components/profiles/preview-toolbar";
+import {
+  DEFAULT_ZOOM,
+  PreviewToolbar,
+  type ZoomLevel,
+} from "@/components/profiles/preview-toolbar";
 import { cn } from "cn";
 
 /**

@@ -16,7 +16,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
         "hover:border-slate-300 hover:bg-white",
         "focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-900/10",
         "disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-slate-200 disabled:opacity-60",
-        "aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15",
+        "aria-invalid:border-destructive aria-invalid:ring-destructive/15 aria-invalid:ring-2",
         // slate-950, not slate-900: slate-900 is the card colour, so a dark
         // field was pixel-identical to the surface behind it (1.000:1).
         "dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:file:text-slate-100 dark:placeholder:text-slate-500",
