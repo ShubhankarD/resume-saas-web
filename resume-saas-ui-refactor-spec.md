@@ -322,33 +322,33 @@ with the following token system:
 
 @layer base {
   :root {
-    --background: 210 40% 98%;          /* #F8FAFC - Crisp Frost Canvas */
-    --foreground: 222 47% 11%;          /* #0B1120 - Deep Carbon Ink */
+    --background: 210 40% 98%; /* #F8FAFC - Crisp Frost Canvas */
+    --foreground: 222 47% 11%; /* #0B1120 - Deep Carbon Ink */
 
-    --card: 0 0% 100%;                  /* #FFFFFF */
+    --card: 0 0% 100%; /* #FFFFFF */
     --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 222 47% 11%;             /* #0B1120 */
+    --primary: 222 47% 11%; /* #0B1120 */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 221 83% 53%;           /* #2563EB - Electric Azure */
+    --secondary: 221 83% 53%; /* #2563EB - Electric Azure */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;             /* #F1F5F9 */
-    --muted-foreground: 215 16% 47%;    /* #64748B */
+    --muted: 210 40% 96.1%; /* #F1F5F9 */
+    --muted-foreground: 215 16% 47%; /* #64748B */
 
-    --accent: 38 92% 50%;               /* #F59E0B - Solar Amber */
+    --accent: 38 92% 50%; /* #F59E0B - Solar Amber */
     --accent-foreground: 222 47% 11%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214 32% 91%;               /* #E2E8F0 */
+    --border: 214 32% 91%; /* #E2E8F0 */
     --input: 214 32% 91%;
-    --ring: 38 92% 50%;                  /* Solar Amber Focus Ring */
+    --ring: 38 92% 50%; /* Solar Amber Focus Ring */
 
     --radius: 0.75rem;
   }
@@ -714,10 +714,7 @@ Render:
 ```tsx
 <span className="font-semibold tracking-tight text-slate-900 dark:text-slate-100">
   resume
-  <span className="font-bold text-amber-500 dark:text-amber-400">
-    ai
-  </span>
-  d
+  <span className="font-bold text-amber-500 dark:text-amber-400">ai</span>d
 </span>
 ```
 
@@ -832,9 +829,7 @@ Preferred composition:
     <p>{description}</p>
   </div>
 
-  <div>
-    {primaryAction}
-  </div>
+  <div>{primaryAction}</div>
 </div>
 ```
 
@@ -1174,9 +1169,7 @@ The Export PDF action should be the high-value action.
 Use:
 
 ```tsx
-<Button variant="cta">
-  Export PDF
-</Button>
+<Button variant="cta">Export PDF</Button>
 ```
 
 If an existing export handler exists, reuse it exactly.
