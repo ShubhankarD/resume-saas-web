@@ -14,17 +14,21 @@ import { FormField } from "@/components/ui/form-field";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ErrorMessage } from "@/components/content/error-message";
 
-const createSchema = z.object({
-  key: contentKeySchema(),
-  label: z.string().min(1, "Label is required").max(100),
-  text: z.string().min(1, "Text is required").max(500),
-});
-type CreateValues = z.infer<typeof createSchema>;
+function makeCreateSchema(existingKeys: readonly string[]) {
+  return z.object({
+    key: contentKeySchema("Key is required", existingKeys),
+    label: z.string().min(1, "Label is required").max(100),
+    text: z.string().min(1, "Text is required").max(500),
+  });
+}
+type CreateValues = z.infer<ReturnType<typeof makeCreateSchema>>;
 
 export function SkillCreateSheet({
+  existingKeys,
   open,
   onOpenChange,
 }: {
+  existingKeys: readonly string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -35,7 +39,7 @@ export function SkillCreateSheet({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
+  } = useForm<CreateValues>({ resolver: zodResolver(makeCreateSchema(existingKeys)) });
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

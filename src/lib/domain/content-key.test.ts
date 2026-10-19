@@ -12,6 +12,14 @@ describe("contentKeySchema", () => {
     expect(result.error?.issues[0].message).toBe("Id is required");
   });
 
+  it("rejects a key that is already taken, with the given message", () => {
+    const schema = contentKeySchema("Key is required", ["cloud"], "Taken");
+    expect(schema.safeParse("data").success).toBe(true);
+    const result = schema.safeParse("cloud");
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe("Taken");
+  });
+
   it("rejects uppercase, leading separators, spaces and over-long keys", () => {
     for (const bad of ["Cloud", "-cloud", "_cloud", "a b", "a".repeat(81)]) {
       expect(contentKeySchema().safeParse(bad).success).toBe(false);

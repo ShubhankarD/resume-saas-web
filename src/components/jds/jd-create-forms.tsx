@@ -188,19 +188,18 @@ export const UrlJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated 
 
 export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [fileError, setFileError] = useState<unknown>(null);
-  const [serverFileError, setServerFileError] = useState<string>();
+  // Either a client-side "no file chosen" or the backend's message for `file`.
+  const [fileMessage, setFileMessage] = useState<string>();
   const generalError = useServerFieldError(error, ["file"], ({ message }) =>
-    setServerFileError(message),
+    setFileMessage(message),
   );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setFileError(null);
-    setServerFileError(undefined);
+    setFileMessage(undefined);
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
-      setFileError(new Error("Choose a file to upload"));
+      setFileMessage("Choose a file to upload");
       return;
     }
     const data = new FormData(e.currentTarget);
@@ -218,7 +217,7 @@ export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
         label="File"
         htmlFor="jd-file-input"
         hint="PDF, DOCX, or plain text"
-        error={serverFileError}
+        error={fileMessage}
         required
       >
         <input
@@ -229,7 +228,6 @@ export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
           className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-slate-800 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:file:bg-slate-50 dark:file:text-slate-900"
         />
       </FormField>
-      <ErrorMessage error={fileError} />
       <ErrorMessage error={generalError} />
       <FormActions
         isPending={isPending}

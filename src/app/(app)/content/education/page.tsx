@@ -13,7 +13,13 @@ export default function EducationPage() {
       title="Education"
       description="Degrees, certifications, and training. Each entry has its own id so resumes can reference it directly."
       section="your education"
-      action={<EducationCreateSheet open={addOpen} onOpenChange={setAddOpen} />}
+      action={(content) => (
+        <EducationCreateSheet
+          existingIds={content.education.map((e) => e.id)}
+          open={addOpen}
+          onOpenChange={setAddOpen}
+        />
+      )}
     >
       {(content) => <EducationList education={content.education} onAdd={() => setAddOpen(true)} />}
     </ContentSectionPage>

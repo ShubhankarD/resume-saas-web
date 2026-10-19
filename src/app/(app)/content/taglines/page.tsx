@@ -13,7 +13,13 @@ export default function TaglinesPage() {
       title="Taglines"
       description="Short positioning statements, keyed by name. A tailored resume picks one to sit under your name."
       section="your taglines"
-      action={<TaglineCreateSheet open={addOpen} onOpenChange={setAddOpen} />}
+      action={(content) => (
+        <TaglineCreateSheet
+          existingKeys={Object.keys(content.taglines)}
+          open={addOpen}
+          onOpenChange={setAddOpen}
+        />
+      )}
     >
       {(content) => <TaglineList taglines={content.taglines} onAdd={() => setAddOpen(true)} />}
     </ContentSectionPage>

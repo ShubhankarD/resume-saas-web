@@ -15,16 +15,20 @@ import { FormField } from "@/components/ui/form-field";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ErrorMessage } from "@/components/content/error-message";
 
-const createSchema = z.object({
-  key: contentKeySchema(),
-  text: z.string().min(1, "Text is required").max(500),
-});
-type CreateValues = z.infer<typeof createSchema>;
+function makeCreateSchema(existingKeys: readonly string[]) {
+  return z.object({
+    key: contentKeySchema("Key is required", existingKeys),
+    text: z.string().min(1, "Text is required").max(500),
+  });
+}
+type CreateValues = z.infer<ReturnType<typeof makeCreateSchema>>;
 
 export function TaglineCreateSheet({
+  existingKeys,
   open,
   onOpenChange,
 }: {
+  existingKeys: readonly string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -35,7 +39,7 @@ export function TaglineCreateSheet({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
+  } = useForm<CreateValues>({ resolver: zodResolver(makeCreateSchema(existingKeys)) });
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
