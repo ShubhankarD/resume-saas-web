@@ -13,7 +13,13 @@ export default function SkillsPage() {
       title="Skills"
       description="Skills grouped the way they read on a resume — a label, and the comma-separated skills behind it."
       section="your skills"
-      action={<SkillCreateSheet open={addOpen} onOpenChange={setAddOpen} />}
+      action={(content) => (
+        <SkillCreateSheet
+          existingKeys={Object.keys(content.skills)}
+          open={addOpen}
+          onOpenChange={setAddOpen}
+        />
+      )}
     >
       {(content) => <SkillGroups skills={content.skills} onAdd={() => setAddOpen(true)} />}
     </ContentSectionPage>

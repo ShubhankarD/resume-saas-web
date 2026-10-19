@@ -15,16 +15,20 @@ import { FormField } from "@/components/ui/form-field";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ErrorMessage } from "@/components/content/error-message";
 
-const createSchema = z.object({
-  id: contentKeySchema("Id is required"),
-  text: z.string().min(1, "Text is required").max(500),
-});
-type CreateValues = z.infer<typeof createSchema>;
+function makeCreateSchema(existingIds: readonly string[]) {
+  return z.object({
+    id: contentKeySchema("Id is required", existingIds, "That id is already used"),
+    text: z.string().min(1, "Text is required").max(500),
+  });
+}
+type CreateValues = z.infer<ReturnType<typeof makeCreateSchema>>;
 
 export function EducationCreateSheet({
+  existingIds,
   open,
   onOpenChange,
 }: {
+  existingIds: readonly string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -35,7 +39,7 @@ export function EducationCreateSheet({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
+  } = useForm<CreateValues>({ resolver: zodResolver(makeCreateSchema(existingIds)) });
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

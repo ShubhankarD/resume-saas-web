@@ -14,10 +14,7 @@ import { contentKeySchema } from "@/lib/domain/content-key";
 
 function makeRoleSchema(existingIds: string[]) {
   return z.object({
-    id: contentKeySchema("Id is required").refine(
-      (id) => !existingIds.includes(id),
-      "That id is already used",
-    ),
+    id: contentKeySchema("Id is required", existingIds, "That id is already used"),
     title: z.string().min(1, "Title is required").max(200),
     org: z.string().min(1, "Organization is required").max(200),
     dates: z.string().min(1, "Dates are required").max(100),
