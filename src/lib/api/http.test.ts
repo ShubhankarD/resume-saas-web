@@ -76,3 +76,34 @@ describe("createHttpClient + bearerAuth", () => {
     await expect(http.json("/x", { method: "DELETE" })).resolves.toBeUndefined();
   });
 });
+
+describe("HttpClient.form", () => {
+  it("sends the FormData untouched without a Content-Type and parses the reply", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => json(201, { id: "1" }));
+    const http = createHttpClient({
+      baseUrl: "http://api",
+      fetch,
+      middleware: [bearerAuth(fakeSession("t1", null))],
+    });
+    const body = new FormData();
+    body.append("text", "hi");
+
+    await expect(http.form("/up", body, { method: "POST" })).resolves.toEqual({ id: "1" });
+    const init = fetch.mock.calls[0][1];
+    expect(init?.body).toBe(body);
+    expect(init?.method).toBe("POST");
+    expect((init?.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+    expect(authHeader(init)).toBe("Bearer t1");
+  });
+
+  it("throws ApiError with the parsed body on a non-2xx reply", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      json(422, { detail: "bad file", field: "file" }),
+    );
+    const http = createHttpClient({ baseUrl: "", fetch });
+    await expect(http.form("/up", new FormData())).rejects.toMatchObject({
+      status: 422,
+      body: { field: "file" },
+    });
+  });
+});

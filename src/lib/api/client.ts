@@ -65,6 +65,26 @@ type SuccessResponseFor<P extends keyof Paths, M extends Method> =
       }[keyof R]
     : never;
 
+/** The multipart request-body schema for POST on a path, or `never` if that
+ * operation takes no multipart body. */
+type MultipartBodyFor<P extends keyof Paths> = [
+  NonNullable<NonNullable<OperationFor<P, "post">> extends { requestBody?: infer RB } ? RB : never>,
+] extends [{ content: { "multipart/form-data": infer B } }]
+  ? B
+  : never;
+
+/** Paths whose POST takes a multipart body. */
+type MultipartPath = {
+  [P in keyof Paths]: [MultipartBodyFor<P>] extends [never] ? never : P;
+}[keyof Paths];
+
+/** Form fields for a multipart POST. The generated schema types file parts
+ * as `string` (OpenAPI `format: binary`), so any key accepts a `Blob` too;
+ * what is checked is the field *names* and which are required. */
+type MultipartFieldsFor<P extends MultipartPath> = {
+  [K in keyof MultipartBodyFor<P>]: string | Blob | null | undefined;
+};
+
 type ApiFetchOptions<P extends keyof Paths, M extends Method> = Omit<
   RequestInit,
   "body" | "method"
@@ -120,6 +140,29 @@ export async function apiFetch<P extends keyof Paths, M extends Method = "get">(
     method: (method ?? "get").toUpperCase(),
   });
   return data as SuccessResponseFor<P, M>;
+}
+
+/** Builds `FormData` from a fields object, skipping `null`/`undefined`. */
+export function buildFormData(fields: Record<string, string | Blob | null | undefined>): FormData {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined && value !== null) form.append(key, value);
+  }
+  return form;
+}
+
+/**
+ * Typed multipart POST: the path must be one whose operation takes
+ * `multipart/form-data`, the field names are checked against its schema, and
+ * the response is typed from the OpenAPI success response — the multipart
+ * counterpart of `apiFetch`, with the same auth and refresh-retry.
+ */
+export async function apiUpload<P extends MultipartPath>(
+  path: P,
+  fields: MultipartFieldsFor<P>,
+): Promise<SuccessResponseFor<P, "post">> {
+  const data = await http.form(String(path), buildFormData(fields), { method: "POST" });
+  return data as SuccessResponseFor<P, "post">;
 }
 
 /** Calls the backend's health check endpoint (GET /api/v1/health). */
