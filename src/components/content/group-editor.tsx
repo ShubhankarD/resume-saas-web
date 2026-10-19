@@ -1,24 +1,15 @@
 "use client";
 
-import { useId, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { FormField } from "@/components/ui/form-field";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
-import { ErrorMessage } from "@/components/content/error-message";
-import { BulletRow, BulletCreateForm } from "@/components/content/bullet-row";
+import { BulletRow } from "@/components/content/bullet-row";
+import { BulletCreateForm } from "@/components/content/bullet-create-form";
+import { GroupHeadingForm } from "@/components/content/group-heading-form";
 import { useGroupActions } from "@/hooks/use-content";
 import type { GroupIn } from "@/lib/api/content";
-
-const groupUpdateSchema = z.object({
-  heading: z.string().max(200),
-});
-type GroupUpdateFormValues = z.infer<typeof groupUpdateSchema>;
 
 /**
  * One bullet group inside a role, rendered as a collapsible section rather
@@ -28,20 +19,7 @@ type GroupUpdateFormValues = z.infer<typeof groupUpdateSchema>;
  */
 export function GroupEditor({ roleId, group }: { roleId: string; group: GroupIn }) {
   const actions = useGroupActions(roleId, group.id);
-  const fieldId = useId();
-  const [createError, setCreateError] = useState<unknown>(null);
-  const [updateError, setUpdateError] = useState<unknown>(null);
   const [adding, setAdding] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { isSubmitting, isDirty },
-  } = useForm<GroupUpdateFormValues>({
-    resolver: zodResolver(groupUpdateSchema),
-    defaultValues: { heading: group.heading ?? "" },
-  });
-
   const bulletCount = group.bullets.length;
 
   return (
@@ -60,37 +38,11 @@ export function GroupEditor({ roleId, group }: { roleId: string; group: GroupIn 
       </AccordionTrigger>
 
       <AccordionContent className="space-y-6 pt-4">
-        <form
-          onSubmit={handleSubmit(async (values) => {
-            setUpdateError(null);
-            try {
-              await actions.update.mutateAsync({
-                heading: values.heading.trim() ? values.heading.trim() : undefined,
-              });
-            } catch (err) {
-              setUpdateError(err);
-            }
-          })}
-          className="space-y-4"
-        >
-          <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[1fr_auto]">
-            <FormField
-              label="Group heading"
-              htmlFor={`${fieldId}-heading`}
-              hint="Optional — shown above this group's bullets on the resume."
-            >
-              <Input
-                id={`${fieldId}-heading`}
-                placeholder="e.g. Platform modernisation"
-                {...register("heading")}
-              />
-            </FormField>
-            <Button type="submit" variant="outline" disabled={isSubmitting || !isDirty}>
-              {isSubmitting ? "Saving…" : "Save heading"}
-            </Button>
-          </div>
-          <ErrorMessage error={updateError} />
-        </form>
+        <GroupHeadingForm
+          heading={group.heading}
+          onSave={(heading) => actions.update.mutateAsync({ heading })}
+          error={actions.update.error}
+        />
 
         <div className="space-y-3">
           <div className="flex items-end justify-between gap-3">
@@ -131,17 +83,11 @@ export function GroupEditor({ roleId, group }: { roleId: string; group: GroupIn 
 
           {adding && (
             <BulletCreateForm
-              error={createError}
+              error={actions.createBullet.error}
               onCancel={() => setAdding(false)}
               onSubmit={async (values) => {
-                setCreateError(null);
-                try {
-                  await actions.createBullet.mutateAsync(values);
-                  setAdding(false);
-                } catch (err) {
-                  setCreateError(err);
-                  throw err;
-                }
+                await actions.createBullet.mutateAsync(values);
+                setAdding(false);
               }}
             />
           )}

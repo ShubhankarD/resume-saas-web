@@ -1,66 +1,24 @@
 "use client";
 
-import { useId, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { EditorCard } from "@/components/ui/editor-card";
 import { Accordion } from "@/components/ui/accordion";
-import { FormField } from "@/components/ui/form-field";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDeleteButton } from "@/components/content/confirm-delete-button";
-import { ErrorMessage } from "@/components/content/error-message";
+import { GroupCreateForm } from "@/components/content/group-create-form";
 import { GroupEditor } from "@/components/content/group-editor";
+import { RoleDetailsForm } from "@/components/content/role-details-form";
 import { useRoleActions } from "@/hooks/use-content";
-import type { RoleIn, RoleUpdate } from "@/lib/api/content";
-
-const roleUpdateSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
-  org: z.string().min(1, "Organization is required").max(200),
-  dates: z.string().min(1, "Dates are required").max(100),
-});
-
-const groupCreateSchema = z.object({
-  id: z
-    .string()
-    .min(1, "Id is required")
-    .max(80)
-    .regex(/^[a-z0-9][a-z0-9-_]*$/, "Use lowercase letters, numbers, - or _"),
-  heading: z.string().max(200),
-});
-type GroupCreateFormValues = z.infer<typeof groupCreateSchema>;
+import type { RoleIn } from "@/lib/api/content";
 
 /** One role card. Owns its role-scoped mutations (useRoleActions) rather
  * than taking them as callbacks; each GroupEditor does the same for its
  * group, so ids never need threading through props. */
 export function RoleEditor({ role }: { role: RoleIn }) {
   const actions = useRoleActions(role.id);
-  const fieldId = useId();
-  const [groupCreateError, setGroupCreateError] = useState<unknown>(null);
-  const [roleUpdateError, setRoleUpdateError] = useState<unknown>(null);
   const [addingGroup, setAddingGroup] = useState(false);
-
-  const {
-    register: registerRole,
-    handleSubmit: handleRoleSubmit,
-    formState: { errors: roleErrors, isSubmitting: roleSubmitting, isDirty: roleDirty },
-  } = useForm<RoleUpdate>({
-    resolver: zodResolver(roleUpdateSchema),
-    defaultValues: { title: role.title, org: role.org, dates: role.dates },
-  });
-
-  const {
-    register: registerGroup,
-    handleSubmit: handleGroupSubmit,
-    reset: resetGroupForm,
-    formState: { errors: groupErrors, isSubmitting: groupSubmitting },
-  } = useForm<GroupCreateFormValues>({
-    resolver: zodResolver(groupCreateSchema),
-    defaultValues: { id: "", heading: "" },
-  });
 
   const bulletCount = role.groups.reduce((sum, group) => sum + group.bullets.length, 0);
 
@@ -77,70 +35,11 @@ export function RoleEditor({ role }: { role: RoleIn }) {
       }
     >
       <div className="space-y-6">
-        <form
-          onSubmit={handleRoleSubmit(async (values) => {
-            setRoleUpdateError(null);
-            try {
-              await actions.update.mutateAsync(values);
-            } catch (err) {
-              setRoleUpdateError(err);
-            }
-          })}
-          className="space-y-4"
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              label="Title"
-              htmlFor={`${fieldId}-title`}
-              error={roleErrors.title?.message}
-              required
-            >
-              <Input
-                id={`${fieldId}-title`}
-                placeholder="Senior Consultant"
-                aria-invalid={roleErrors.title ? true : undefined}
-                {...registerRole("title")}
-              />
-            </FormField>
-
-            <FormField
-              label="Organization"
-              htmlFor={`${fieldId}-org`}
-              error={roleErrors.org?.message}
-              required
-            >
-              <Input
-                id={`${fieldId}-org`}
-                placeholder="Acme Corp"
-                aria-invalid={roleErrors.org ? true : undefined}
-                {...registerRole("org")}
-              />
-            </FormField>
-
-            <FormField
-              label="Dates"
-              htmlFor={`${fieldId}-dates`}
-              error={roleErrors.dates?.message}
-              required
-              hint="Free text, e.g. “Jan 2024 – Present”."
-            >
-              <Input
-                id={`${fieldId}-dates`}
-                placeholder="2020--Present"
-                aria-invalid={roleErrors.dates ? true : undefined}
-                {...registerRole("dates")}
-              />
-            </FormField>
-          </div>
-
-          <ErrorMessage error={roleUpdateError} />
-
-          <div className="flex justify-end">
-            <Button type="submit" disabled={roleSubmitting || !roleDirty}>
-              {roleSubmitting ? "Saving…" : "Save changes"}
-            </Button>
-          </div>
-        </form>
+        <RoleDetailsForm
+          role={role}
+          onSave={(body) => actions.update.mutateAsync(body)}
+          error={actions.update.error}
+        />
 
         <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
           <div className="flex items-end justify-between gap-3">
@@ -187,67 +86,14 @@ export function RoleEditor({ role }: { role: RoleIn }) {
           )}
 
           {addingGroup && (
-            <form
-              onSubmit={handleGroupSubmit(async (values) => {
-                setGroupCreateError(null);
-                try {
-                  await actions.createGroup.mutateAsync({
-                    id: values.id,
-                    heading: values.heading.trim() ? values.heading.trim() : undefined,
-                  });
-                  resetGroupForm();
-                  setAddingGroup(false);
-                } catch (err) {
-                  setGroupCreateError(err);
-                }
-              })}
-              className="space-y-4 border-t border-slate-200 pt-4 dark:border-slate-800"
-            >
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                  label="Group id"
-                  htmlFor={`${fieldId}-group-id`}
-                  error={groupErrors.id?.message}
-                  required
-                  hint="Lowercase letters, numbers, - or _"
-                >
-                  <Input
-                    id={`${fieldId}-group-id`}
-                    placeholder="group-id"
-                    aria-invalid={groupErrors.id ? true : undefined}
-                    {...registerGroup("id")}
-                  />
-                </FormField>
-
-                <FormField
-                  label="Group heading"
-                  htmlFor={`${fieldId}-group-heading`}
-                  hint="Optional."
-                >
-                  <Input
-                    id={`${fieldId}-group-heading`}
-                    placeholder="e.g. Platform modernisation"
-                    {...registerGroup("heading")}
-                  />
-                </FormField>
-              </div>
-
-              <ErrorMessage error={groupCreateError} />
-
-              <div className="flex flex-wrap justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAddingGroup(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" disabled={groupSubmitting}>
-                  {groupSubmitting ? "Adding…" : "Add group"}
-                </Button>
-              </div>
-            </form>
+            <GroupCreateForm
+              error={actions.createGroup.error}
+              onCancel={() => setAddingGroup(false)}
+              onSubmit={async (body) => {
+                await actions.createGroup.mutateAsync(body);
+                setAddingGroup(false);
+              }}
+            />
           )}
         </div>
       </div>
