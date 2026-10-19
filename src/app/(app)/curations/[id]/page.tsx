@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { BackLink } from "@/components/ui/back-link";
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useCuration, useCancelCuration } from "@/hooks/use-curations";
-import { useJobProgress } from "@/hooks/use-job-progress";
+import { useJobStream } from "@/hooks/use-job-stream";
 import { curationStreamPath } from "@/lib/api/curations";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -19,23 +18,9 @@ import { JobActivityFeed } from "@/components/jobs/job-activity-feed";
  * Curation job detail: shows the live agent activity feed while the job
  * runs, then a "Review draft" action once it lands on `draft_profile_id`.
  *
- * Only opens `GET /api/v1/curations/{id}/stream` for a job that is
- * non-terminal *when this page first sees it* (`hasStreamed`, a one-way
- * latch below) — reopening this page for a job that already finished
- * doesn't bother connecting to a channel the backend's
- * `subscribe_progress_events()` would have already closed from its side.
- * Deliberately does NOT re-derive "should I be streaming" from the
- * polled `status` on every render, though: `useCuration`'s poll can (and
- * in practice does, e.g. right after a fast failure) observe a terminal
- * status before the SSE connection has finished delivering/parsing every
- * event still in flight. Tying the stream's lifetime to that polled
- * status caused exactly that bug during manual verification — the feed's
- * own events got cleared out from under the user the instant the poll
- * saw `completed`, even though the activity that led there had just
- * streamed in. The latch keeps the stream (and its accumulated events)
- * open for the lifetime of this page once started; `useJobProgress`
- * itself is what actually closes the connection, on its own terminal SSE
- * event.
+ * The stream only opens for a job that is non-terminal *when this page first
+ * sees it* and then stays open for the page's lifetime — see `useJobStream`
+ * for why that latch is deliberately not derived from the polled status.
  */
 export default function CurationDetailPage() {
   const params = useParams<{ id: string }>();
@@ -45,13 +30,9 @@ export default function CurationDetailPage() {
 
   const isNonTerminal = curation ? !isTerminalStatus("job", curation.status) : false;
 
-  const [hasStreamed, setHasStreamed] = useState(false);
-  useEffect(() => {
-    if (isNonTerminal) setHasStreamed(true);
-  }, [isNonTerminal]);
-
-  const { events, connectionState, connectionError } = useJobProgress(
-    hasStreamed ? curationStreamPath(curationId) : undefined,
+  const { events, connectionState, connectionError, hasStreamed } = useJobStream(
+    isNonTerminal,
+    curationStreamPath(curationId),
   );
 
   const canReview = curation?.status === "completed" && Boolean(curation.draft_profile_id);

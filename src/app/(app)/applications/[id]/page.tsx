@@ -1,31 +1,28 @@
 "use client";
 
 import { BackLink } from "@/components/ui/back-link";
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ExternalLink, RefreshCw } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import {
   useApplication,
   useCancelApplication,
   useConfirmSubmitApplication,
   useApplicationScreenshot,
 } from "@/hooks/use-applications";
-import { useJobProgress } from "@/hooks/use-job-progress";
+import { useJobStream } from "@/hooks/use-job-stream";
 import { applicationStreamPath } from "@/lib/api/applications";
+import { jobDomain } from "@/lib/domain/application";
 import { isTerminalStatus } from "@/lib/domain/job-status";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PageToolbar } from "@/components/ui/page-toolbar";
 import { ErrorMessage } from "@/components/content/error-message";
 import { JobActivityFeed } from "@/components/jobs/job-activity-feed";
-
-function jobDomain(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
+import {
+  LiveSession,
+  PreparingSession,
+  TerminalOutcome,
+} from "@/components/applications/application-session";
 
 /**
  * Apply job detail: the live browser session (once one exists) plus F6's
@@ -40,12 +37,8 @@ function jobDomain(url: string): string {
  * definition its non-terminal set — so the stream latch and the Cancel
  * button's visibility can't silently drift apart.
  *
- * Same one-way `hasStreamed` latch as curation's detail page, and for the
- * identical documented reason: `useApplication`'s poll can observe a
- * terminal status before the SSE stream has finished delivering every
- * event still in flight, and tying the stream's lifetime to the polled
- * status instead of this latch reproduces that exact bug (see
- * curations/[id]/page.tsx's docstring for the full history).
+ * The stream lifecycle (one-way latch, see `useJobStream`) is shared with the
+ * curation detail page.
  */
 export default function ApplicationDetailPage() {
   const params = useParams<{ id: string }>();
@@ -57,13 +50,9 @@ export default function ApplicationDetailPage() {
 
   const isNonTerminal = application ? !isTerminalStatus("application", application.status) : false;
 
-  const [hasStreamed, setHasStreamed] = useState(false);
-  useEffect(() => {
-    if (isNonTerminal) setHasStreamed(true);
-  }, [isNonTerminal]);
-
-  const { events, connectionState, connectionError } = useJobProgress(
-    hasStreamed ? applicationStreamPath(applicationId) : undefined,
+  const { events, connectionState, connectionError, hasStreamed } = useJobStream(
+    isNonTerminal,
+    applicationStreamPath(applicationId),
   );
 
   // vnc_url/browser_session_id are written unconditionally once the
@@ -169,14 +158,7 @@ export default function ApplicationDetailPage() {
           ) : !isNonTerminal ? (
             <TerminalOutcome status={application.status} />
           ) : (
-            <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-center dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Preparing the browser session…
-              </p>
-              <p className="max-w-sm text-xs text-slate-500 dark:text-slate-400">
-                This launches a real container — it usually takes a few seconds to become reachable.
-              </p>
-            </div>
+            <PreparingSession />
           )}
         </div>
       )}
@@ -188,85 +170,6 @@ export default function ApplicationDetailPage() {
           connectionError={connectionError}
         />
       )}
-    </div>
-  );
-}
-
-function TerminalOutcome({ status }: { status: string }) {
-  const copy: Record<string, string> = {
-    submitted: "Submitted. The browser session has been closed.",
-    cancelled: "Cancelled. The browser session has been closed.",
-    failed: "The agent couldn't complete this application.",
-    expired: "No one reviewed this session in time, so it was closed automatically.",
-  };
-  return (
-    <div className="flex h-48 flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white text-center dark:border-slate-800 dark:bg-slate-900">
-      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-        {copy[status] ?? `This application is ${status}.`}
-      </p>
-    </div>
-  );
-}
-
-/**
- * The embedded session. `vnc_url` already carries its own per-session
- * auth token (F0-4, see plans/phase-F0-backend-prereqs.md) baked into the
- * noVNC path — this iframe needs no extra header/query wiring on top of
- * that URL.
- *
- * The container can legitimately take a few seconds to become reachable
- * after launch (the plan's own flagged risk), and a refused connection
- * doesn't reliably fire an iframe's `onError` in every browser — so the
- * fallback here is an always-visible "Trouble seeing the session?"
- * affordance, not something that only appears after a detected failure.
- */
-function LiveSession({
-  vncUrl,
-  screenshot,
-}: {
-  vncUrl: string;
-  screenshot: ReturnType<typeof useApplicationScreenshot>;
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 dark:border-slate-800">
-        <iframe
-          title="Live browser session"
-          src={vncUrl}
-          data-testid="application-vnc-iframe"
-          className="h-[70vh] w-full border-0 lg:h-[calc(100vh-16rem)]"
-          allow="clipboard-read; clipboard-write"
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-900">
-        <span className="text-slate-500 dark:text-slate-400">
-          Trouble seeing the session? It can take a few seconds to connect.
-        </span>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={() => void screenshot.refresh()}
-          disabled={screenshot.isLoading}
-          data-testid="refresh-screenshot-button"
-        >
-          <RefreshCw aria-hidden="true" className={screenshot.isLoading ? "animate-spin" : ""} />
-          {screenshot.isLoading ? "Loading…" : "View last frame instead"}
-        </Button>
-      </div>
-
-      {screenshot.error ? (
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          No frame available yet — the session may still be starting.
-        </p>
-      ) : screenshot.url ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a blob: object URL, not an optimizable remote asset.
-        <img
-          src={screenshot.url}
-          alt="Last known frame of the browser session"
-          className="w-full rounded-lg border border-slate-200 dark:border-slate-800"
-        />
-      ) : null}
     </div>
   );
 }
