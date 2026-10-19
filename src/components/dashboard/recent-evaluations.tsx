@@ -5,10 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+import { formatDate } from "@/lib/domain/dates";
 
 function ActivityRowSkeleton() {
   return (

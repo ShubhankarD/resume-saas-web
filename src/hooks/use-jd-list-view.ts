@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { JDSummary } from "@/lib/api/jds";
 import {
   ALL_SOURCES,
@@ -9,21 +9,24 @@ import {
   distinctSourceTypes,
   type JdListQuery,
 } from "@/lib/domain/jd-list";
+import { useListQuery } from "@/hooks/use-list-query";
 
-/** React state around the pure list query in `lib/domain/jd-list`. */
+/** `useListQuery` bound to the JD list's query and its setters. */
 export function useJdListView(jds: readonly JDSummary[] | undefined) {
-  const [query, setQuery] = useState<JdListQuery>(DEFAULT_JD_LIST_QUERY);
-
+  const { query, visible, patch } = useListQuery<JDSummary, JdListQuery>(
+    jds,
+    applyJdListQuery,
+    DEFAULT_JD_LIST_QUERY,
+  );
   const sourceTypes = useMemo(() => distinctSourceTypes(jds ?? []), [jds]);
-  const visible = useMemo(() => applyJdListQuery(jds ?? [], query), [jds, query]);
 
   return {
     query,
     sourceTypes,
     visible,
-    setSearch: (search: string) => setQuery((q) => ({ ...q, search })),
-    setSort: (sort: JdListQuery["sort"]) => setQuery((q) => ({ ...q, sort })),
-    setSource: (source: string) => setQuery((q) => ({ ...q, source })),
-    clearFilters: () => setQuery((q) => ({ ...q, search: "", source: ALL_SOURCES })),
+    setSearch: (search: string) => patch({ search }),
+    setSort: (sort: JdListQuery["sort"]) => patch({ sort }),
+    setSource: (source: string) => patch({ source }),
+    clearFilters: () => patch({ search: "", source: ALL_SOURCES }),
   };
 }

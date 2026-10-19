@@ -1,3 +1,5 @@
+import { newestFirst } from "@/lib/domain/dates";
+
 /**
  * What the dashboard derives from the lists it already loads, kept out of the
  * page so it can be unit-tested without React.
@@ -27,7 +29,7 @@ export function recentEvaluations<T extends DatedEvaluation>(
   evaluations: readonly T[],
   limit = 5,
 ): T[] {
-  return [...evaluations].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit);
+  return newestFirst(evaluations).slice(0, limit);
 }
 
 export interface NextStep {
