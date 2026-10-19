@@ -11,13 +11,12 @@ import { FormField } from "@/components/ui/form-field";
 import { ErrorMessage } from "@/components/content/error-message";
 import type { RoleCreate } from "@/lib/api/content";
 import { contentKeySchema } from "@/lib/domain/content-key";
+import { roleFieldsSchema } from "@/lib/domain/content-forms";
 
 function makeRoleSchema(existingIds: string[]) {
   return z.object({
     id: contentKeySchema("Id is required", existingIds, "That id is already used"),
-    title: z.string().min(1, "Title is required").max(200),
-    org: z.string().min(1, "Organization is required").max(200),
-    dates: z.string().min(1, "Dates are required").max(100),
+    ...roleFieldsSchema.shape,
   });
 }
 
