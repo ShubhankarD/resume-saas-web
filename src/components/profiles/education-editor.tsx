@@ -1,33 +1,16 @@
 "use client";
 
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { GraduationCap } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/page-header";
 import { SortableGrip, SortableRow } from "@/components/profiles/sortable-row";
 import type { ContentIn } from "@/lib/api/content";
 import type { ProfileWrite } from "@/lib/api/profiles";
+import { moveItem } from "@/lib/domain/reorder";
 import { ProfileSelection } from "@/lib/profile-draft";
-
-const checkboxClassName =
-  "size-4 shrink-0 cursor-pointer rounded-sm border-slate-300 accent-slate-900 outline-none focus-visible:ring-3 focus-visible:ring-ring/40 dark:border-slate-600 dark:accent-slate-100";
-
-const overlineClassName =
-  "text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:text-slate-400";
+import { CHECKBOX_CLASS, OVERLINE_CLASS } from "@/components/profiles/editor-styles";
+import { SortableDndContext } from "@/components/profiles/sortable-dnd";
 
 /**
  * `EducationEntryIn` is flat `{id, text}` — there is no degree/school/date
@@ -43,10 +26,6 @@ export function EducationEditor({
   draft: ProfileWrite;
   onChange: (patch: Partial<ProfileWrite>) => void;
 }) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
   const selected = new ProfileSelection(draft, content).educationOrder();
   const byId = new Map(content.education.map((e) => [e.id, e]));
   const available = content.education.filter((entry) => !selected.includes(entry.id));
@@ -57,13 +36,9 @@ export function EducationEditor({
     });
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = selected.indexOf(String(active.id));
-    const newIndex = selected.indexOf(String(over.id));
-    if (oldIndex === -1 || newIndex === -1) return;
-    onChange({ education: arrayMove(selected, oldIndex, newIndex) });
+  function handleDragEnd(activeId: string, overId: string) {
+    const order = moveItem(selected, activeId, overId);
+    if (order) onChange({ education: order });
   }
 
   return (
@@ -88,11 +63,7 @@ export function EducationEditor({
               description="Pick an entry below to add it back to this profile."
             />
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
+            <SortableDndContext onDragEnd={handleDragEnd}>
               <SortableContext items={selected} strategy={verticalListSortingStrategy}>
                 <ul className="space-y-2">
                   {selected.map((id, index) => {
@@ -111,7 +82,7 @@ export function EducationEditor({
                             <span className="inline-flex h-8 shrink-0 items-center">
                               <input
                                 type="checkbox"
-                                className={checkboxClassName}
+                                className={CHECKBOX_CLASS}
                                 checked
                                 onChange={() => toggle(id, false)}
                                 aria-label={`Include ${entry?.text ?? id}`}
@@ -125,19 +96,19 @@ export function EducationEditor({
                   })}
                 </ul>
               </SortableContext>
-            </DndContext>
+            </SortableDndContext>
           )}
 
           {available.length > 0 && (
             <div className="space-y-1.5 border-t border-slate-200 pt-4 dark:border-slate-800">
-              <p className={overlineClassName}>Not included ({available.length})</p>
+              <p className={OVERLINE_CLASS}>Not included ({available.length})</p>
               <ul className="space-y-0.5">
                 {available.map((entry) => (
                   <li key={entry.id} className="list-none">
                     <label className="flex cursor-pointer items-start gap-2.5 rounded-md px-2 py-2 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60">
                       <input
                         type="checkbox"
-                        className={`${checkboxClassName} mt-0.5`}
+                        className={`${CHECKBOX_CLASS} mt-0.5`}
                         checked={false}
                         onChange={() => toggle(entry.id, true)}
                         aria-label={`Include ${entry.text || entry.id}`}
