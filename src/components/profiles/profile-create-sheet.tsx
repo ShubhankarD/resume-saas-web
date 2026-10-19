@@ -6,7 +6,7 @@ import { z } from "zod";
 import { Loader2, Plus } from "lucide-react";
 import { useCreateProfile } from "@/hooks/use-profiles";
 import { surfacedElsewhere } from "@/lib/form-submit";
-import { newProfileDraft } from "@/lib/domain/profile-defaults";
+import { newProfileDraft, profileNameSchema } from "@/lib/domain/profile-defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
@@ -21,11 +21,7 @@ import {
 import { ErrorMessage } from "@/components/content/error-message";
 
 const createSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Name is required")
-    .max(100)
-    .regex(/^[a-z0-9][a-z0-9-_]*$/, "Use lowercase letters, numbers, - or _"),
+  name: profileNameSchema,
   label: z.string().min(1, "Label is required").max(255),
 });
 type CreateForm = z.infer<typeof createSchema>;
