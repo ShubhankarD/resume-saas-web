@@ -145,6 +145,10 @@ export interface HttpClient {
   /** JSON request: serializes `body`, throws ApiError on non-2xx, returns
    * the parsed JSON (or text, for a non-JSON response). */
   json(path: string, init?: Omit<RequestInit, "body"> & { body?: unknown }): Promise<unknown>;
+  /** Multipart request: sends `body` untouched with no `Content-Type` (the
+   * browser adds the boundary), throws ApiError on non-2xx, returns the
+   * parsed body like `json`. */
+  form(path: string, body: FormData, init?: Omit<RequestInit, "body">): Promise<unknown>;
 }
 
 export function createHttpClient({
@@ -171,6 +175,12 @@ export function createHttpClient({
           body: body !== undefined ? JSON.stringify(body) : undefined,
         },
       });
+      const data = await readBody(response);
+      if (!response.ok) throw new ApiError(response.status, data);
+      return data;
+    },
+    async form(path, body, init = {}) {
+      const response = await chain({ path, init: { ...init, body } });
       const data = await readBody(response);
       if (!response.ok) throw new ApiError(response.status, data);
       return data;

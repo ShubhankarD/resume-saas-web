@@ -1,33 +1,21 @@
-import { authFetch, throwIfNotOk } from "@/lib/api/client";
+import { apiUpload, authFetch, throwIfNotOk } from "@/lib/api/client";
 import type { ContentIn, IntakeResponse } from "@/lib/api/content";
 
 /**
  * Multipart upload + YAML-download helpers for content import/export/intake
- * (app/api/content.py's POST /import, POST /intake, GET /export). These
- * three don't fit apiFetch's JSON-only request/response shape, so they go
- * through authFetch directly (see src/lib/api/client.ts).
+ * (app/api/content.py's POST /import, POST /intake, GET /export). Import and
+ * intake are multipart and go through `apiUpload`; the YAML download isn't
+ * JSON, so it uses `authFetch` (see src/lib/api/client.ts).
  */
 
 export async function importContentYaml(file: File): Promise<ContentIn> {
-  const form = new FormData();
-  form.append("file", file);
-  const response = await authFetch("/api/v1/content/import", {
-    method: "POST",
-    body: form,
-  });
-  await throwIfNotOk(response);
-  return (await response.json()) as ContentIn;
+  // The backend documents this response as a free-form object, so the schema
+  // cannot type it; the endpoint returns the imported `ContentIn`.
+  return (await apiUpload("/api/v1/content/import", { file })) as ContentIn;
 }
 
 export async function intakeResume(file: File): Promise<IntakeResponse> {
-  const form = new FormData();
-  form.append("file", file);
-  const response = await authFetch("/api/v1/content/intake", {
-    method: "POST",
-    body: form,
-  });
-  await throwIfNotOk(response);
-  return (await response.json()) as IntakeResponse;
+  return apiUpload("/api/v1/content/intake", { file });
 }
 
 /**
