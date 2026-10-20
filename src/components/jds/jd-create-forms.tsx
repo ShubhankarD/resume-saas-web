@@ -1,18 +1,22 @@
 "use client";
 
-import { useRef, useState, type ComponentProps, type ComponentType } from "react";
+import { useRef, useState, type ComponentType } from "react";
 import { useForm } from "react-hook-form";
 import { surfacedElsewhere } from "@/lib/form-submit";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
 import type { CreateJdInput } from "@/lib/api/jds";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
-import { SheetClose } from "@/components/ui/sheet";
 import { ErrorMessage } from "@/components/content/error-message";
+import {
+  FILE_INPUT_CLASS,
+  FORM_CLASS,
+  FormActions,
+  MetaFields,
+} from "@/components/jds/jd-form-parts";
+import { blankToUndefined } from "@/lib/domain/text";
 import { useServerFieldError } from "@/hooks/use-server-field-error";
 
 /**
@@ -48,53 +52,6 @@ const urlSchema = metaSchema.extend({ url: z.string().url("Enter a valid URL") }
 
 type TextValues = z.infer<typeof textSchema>;
 type UrlValues = z.infer<typeof urlSchema>;
-
-type InputProps = ComponentProps<typeof Input>;
-
-function MetaFields({
-  idPrefix,
-  title,
-  company,
-}: {
-  idPrefix: string;
-  title: InputProps;
-  company: InputProps;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <FormField label="Title" htmlFor={`${idPrefix}-title`} hint="Optional">
-        <Input id={`${idPrefix}-title`} placeholder="Staff Engineer" {...title} />
-      </FormField>
-      <FormField label="Company" htmlFor={`${idPrefix}-company`} hint="Optional">
-        <Input id={`${idPrefix}-company`} placeholder="Acme Corp" {...company} />
-      </FormField>
-    </div>
-  );
-}
-
-function FormActions({
-  isPending,
-  testId,
-  idleLabel,
-  pendingLabel,
-}: {
-  isPending: boolean;
-  testId: string;
-  idleLabel: string;
-  pendingLabel: string;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2 pt-1">
-      <Button type="submit" disabled={isPending} data-testid={testId}>
-        {isPending ? <Loader2 aria-hidden="true" className="animate-spin" /> : null}
-        {isPending ? pendingLabel : idleLabel}
-      </Button>
-      <SheetClose render={<Button type="button" variant="ghost" />}>Cancel</SheetClose>
-    </div>
-  );
-}
-
-const FORM_CLASS = "flex flex-col gap-4";
 
 export const TextJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated }) => {
   const form = useForm<TextValues>({ resolver: zodResolver(textSchema) });
@@ -203,9 +160,12 @@ export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
       return;
     }
     const data = new FormData(e.currentTarget);
-    const title = String(data.get("title") ?? "").trim() || undefined;
-    const company = String(data.get("company") ?? "").trim() || undefined;
-    await onSubmit({ mode: "file", file, title, company });
+    await onSubmit({
+      mode: "file",
+      file,
+      title: blankToUndefined(String(data.get("title") ?? "")),
+      company: blankToUndefined(String(data.get("company") ?? "")),
+    });
     if (fileInputRef.current) fileInputRef.current.value = "";
     onCreated();
   }
@@ -225,7 +185,7 @@ export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated
           id="jd-file-input"
           type="file"
           data-testid="jd-file-input"
-          className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-slate-800 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:file:bg-slate-50 dark:file:text-slate-900"
+          className={FILE_INPUT_CLASS}
         />
       </FormField>
       <ErrorMessage error={generalError} />
