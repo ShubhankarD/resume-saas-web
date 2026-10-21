@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   withBulletToggled,
   withSkillOverride,
+  skillsOverLimit,
   withSkillToggled,
   withTextOverride,
 } from "./profile-overrides";
@@ -60,5 +61,12 @@ describe("withSkillToggled", () => {
 
   it("always allows removing", () => {
     expect(withSkillToggled(["a", "b"], "a", false, 2)).toEqual(["b"]);
+  });
+});
+
+describe("skillsOverLimit", () => {
+  it("counts the groups beyond the limit, never negative", () => {
+    expect(skillsOverLimit(["a", "b", "c", "d", "e", "f"], 4)).toBe(2);
+    expect(skillsOverLimit(["a", "b"], 4)).toBe(0);
   });
 });
