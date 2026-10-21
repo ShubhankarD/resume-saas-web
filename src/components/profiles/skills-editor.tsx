@@ -7,7 +7,11 @@ import { SectionHeader } from "@/components/ui/page-header";
 import type { ContentIn } from "@/lib/api/content";
 import type { ProfileWrite } from "@/lib/api/profiles";
 import { moveItem } from "@/lib/domain/reorder";
-import { withSkillOverride, withSkillToggled } from "@/lib/domain/profile-overrides";
+import {
+  skillsOverLimit,
+  withSkillOverride,
+  withSkillToggled,
+} from "@/lib/domain/profile-overrides";
 import { MAX_SKILLS_GROUPS, ProfileSelection } from "@/lib/profile-draft";
 import { SkillAvailableList } from "@/components/profiles/skill-available-list";
 import { SkillIncludedRow } from "@/components/profiles/skill-included-row";
@@ -31,6 +35,7 @@ export function SkillsEditor({
       label: content.skills[key]?.label ?? key,
       text: content.skills[key]?.text ?? "",
     }));
+  const overLimit = skillsOverLimit(selected, MAX_SKILLS_GROUPS);
   const atLimit = selected.length >= MAX_SKILLS_GROUPS;
 
   function toggle(key: string, checked: boolean) {
@@ -54,6 +59,13 @@ export function SkillsEditor({
           </span>
         }
       />
+
+      {overLimit > 0 ? (
+        <p role="alert" className="text-destructive text-sm" data-testid="skills-over-limit">
+          This resume includes every skill group until you pick some. Remove {overLimit} to get to{" "}
+          {MAX_SKILLS_GROUPS} — the preview and export won&apos;t work until you do.
+        </p>
+      ) : null}
 
       {allKeys.length === 0 ? (
         <EmptyState

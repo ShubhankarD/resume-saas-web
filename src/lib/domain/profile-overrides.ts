@@ -62,3 +62,8 @@ export function withSkillToggled(
   if (!checked) return selected.filter((k) => k !== key);
   return selected.length >= max ? null : [...selected, key];
 }
+
+/** How many groups must be removed to fit `max` (0 when already within it). */
+export function skillsOverLimit(selected: readonly string[], max: number): number {
+  return Math.max(0, selected.length - max);
+}
