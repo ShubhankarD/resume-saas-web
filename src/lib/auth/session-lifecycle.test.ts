@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
-import type { RefreshOutcome } from "@/lib/auth/session";
+import type { RefreshOutcome } from "@/lib/auth/session-refresher";
 import type { MeResponse } from "@/lib/auth/store";
 import { createSessionLifecycle } from "./session-lifecycle";
 
