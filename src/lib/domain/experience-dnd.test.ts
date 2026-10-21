@@ -1,31 +1,18 @@
 import { describe, expect, it } from "vitest";
-import type { ContentIn } from "@/lib/api/content";
 import type { ProfileWrite } from "@/lib/api/profiles";
 import { ProfileSelection } from "@/lib/profile-draft";
+import { contentFixture, draftFixture, roleFixture } from "@/lib/test-support/content-fixtures";
 import { bulletSortableId, groupSortableId, reorderPatch, roleSortableId } from "./experience-dnd";
 
-// Only the id structure matters here; the cast stays inside this fixture
-// (ContentIn has many required fields these rules never read).
-const content = {
+const content = contentFixture({
   experience: [
-    {
-      id: "r1",
-      groups: [
-        { id: "g1", bullets: [{ id: "b1" }, { id: "b2" }, { id: "b3" }] },
-        { id: "g2", bullets: [] },
-      ],
-    },
-    { id: "r2", groups: [{ id: "g3", bullets: [] }] },
+    roleFixture("r1", { g1: ["b1", "b2", "b3"], g2: [] }),
+    roleFixture("r2", { g3: [] }),
   ],
-  skills: {},
-  education: [],
-} as unknown as ContentIn;
+});
 
 const selection = (patch: Partial<ProfileWrite> = {}) =>
-  new ProfileSelection(
-    { experience: null, education: null, bullets: {}, groups_order: [], ...patch } as ProfileWrite,
-    content,
-  );
+  new ProfileSelection(draftFixture(patch), content);
 
 describe("reorderPatch", () => {
   it("reorders roles", () => {

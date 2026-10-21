@@ -1,39 +1,20 @@
 import { describe, expect, it } from "vitest";
-import type { ContentIn } from "@/lib/api/content";
-import type { ProfileWrite } from "@/lib/api/profiles";
 import { ProfileSelection } from "@/lib/profile-draft";
+import { contentFixture, draftFixture, roleFixture } from "@/lib/test-support/content-fixtures";
 
-const content = {
-  name: "Test",
-  contact: [],
-  taglines: {},
+const content = contentFixture({
   skills: { lang: { label: "Languages", text: "TS" }, cloud: { label: "Cloud", text: "GCP" } },
   experience: [
-    {
-      id: "r1",
-      title: "Eng",
-      org: "A",
-      dates: "2020",
-      groups: [
-        { id: "g1", bullets: [{ id: "b1" }, { id: "b2" }] },
-        { id: "g2", bullets: [{ id: "b3" }] },
-      ],
-    },
-    { id: "r2", title: "Eng", org: "B", dates: "2018", groups: [{ id: "g3", bullets: [] }] },
+    roleFixture("r1", { g1: ["b1", "b2"], g2: ["b3"] }),
+    roleFixture("r2", { g3: [] }, { org: "B", dates: "2018" }),
   ],
-  education: [{ id: "e1" }, { id: "e2" }],
-  application: {},
-} as unknown as ContentIn;
+  education: [
+    { id: "e1", text: "BS" },
+    { id: "e2", text: "MS" },
+  ],
+});
 
-const draft = (patch: Partial<ProfileWrite> = {}) =>
-  ({
-    experience: null,
-    education: null,
-    bullets: {},
-    groups_order: [],
-    skills_order: [],
-    ...patch,
-  }) as ProfileWrite;
+const draft = draftFixture;
 
 describe("ProfileSelection", () => {
   it("defaults a null experience to every role in content order", () => {
