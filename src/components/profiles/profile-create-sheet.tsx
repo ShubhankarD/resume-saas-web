@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Loader2, Plus } from "lucide-react";
 import { useCreateProfile } from "@/hooks/use-profiles";
 import { surfacedElsewhere } from "@/lib/form-submit";
+import { useContent } from "@/hooks/use-content";
 import { newProfileDraft, profileNameSchema } from "@/lib/domain/profile-defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export function ProfileCreateSheet({
   onCreated: (profileId: string) => void;
 }) {
   const createProfile = useCreateProfile();
+  const { data: content } = useContent();
   const {
     register,
     handleSubmit,
@@ -61,7 +63,9 @@ export function ProfileCreateSheet({
         <form
           onSubmit={surfacedElsewhere(
             handleSubmit(async (values) => {
-              const profile = await createProfile.mutateAsync(newProfileDraft(values));
+              const profile = await createProfile.mutateAsync(
+                newProfileDraft(values, Object.keys(content?.taglines ?? {})),
+              );
               reset();
               onOpenChange(false);
               onCreated(profile.id);
