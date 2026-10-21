@@ -11,9 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { getErrorMessage } from "@/lib/api/client";
-import { getMe, googleAuth, login } from "@/lib/auth/api";
-import { useAuthStore } from "@/lib/auth/store";
-import { storeTokens } from "@/lib/auth/token-storage";
+import { googleAuth, login } from "@/lib/auth/api";
+import { sessionLifecycle } from "@/lib/auth/browser-lifecycle";
 import { GoogleSignInButton, isGoogleSignInConfigured } from "@/components/auth/GoogleSignInButton";
 
 const schema = z.object({
@@ -25,7 +24,6 @@ type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const setSession = useAuthStore((s) => s.setSession);
   const {
     register,
     handleSubmit,
@@ -33,11 +31,8 @@ export default function LoginPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   async function finishLogin(accessToken: string, refreshToken: string) {
-    storeTokens(refreshToken);
-    useAuthStore.getState().setAccessToken(accessToken);
-    // Fetch /me for the display name/plan tier the app shell shows next.
-    const user = await getMe();
-    setSession(accessToken, user);
+    // Fetches /me for the display name/plan tier the app shell shows next.
+    await sessionLifecycle.signIn(accessToken, refreshToken);
     router.push("/dashboard");
   }
 

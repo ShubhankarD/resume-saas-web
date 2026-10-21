@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { FileUser, Plus, Search } from "lucide-react";
 import { useProfiles, useDeleteProfile } from "@/hooks/use-profiles";
 import { useProfileListView } from "@/hooks/use-profile-list-view";
@@ -18,6 +19,7 @@ const GRID_CLASS =
 export default function ProfilesListPage() {
   const { data: profiles, isLoading, error } = useProfiles();
   const deleteProfile = useDeleteProfile();
+  const router = useRouter();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const view = useProfileListView(profiles);
 
@@ -29,7 +31,13 @@ export default function ProfilesListPage() {
         eyebrow="Resumes"
         title="Profiles"
         description="Each profile is one tailored resume built from your content library."
-        action={<ProfileCreateSheet open={showCreateForm} onOpenChange={setShowCreateForm} />}
+        action={
+          <ProfileCreateSheet
+            open={showCreateForm}
+            onOpenChange={setShowCreateForm}
+            onCreated={(id) => router.push(`/profiles/${id}`)}
+          />
+        }
       />
 
       <ErrorMessage error={error} />
