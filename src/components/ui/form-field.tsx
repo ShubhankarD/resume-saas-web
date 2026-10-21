@@ -5,7 +5,7 @@ type FormFieldProps = {
   label: string;
   /** When provided, the label is rendered as a real `<label htmlFor>`. */
   htmlFor?: string;
-  hint?: string;
+  hint?: React.ReactNode;
   error?: string;
   required?: boolean;
   className?: string;
