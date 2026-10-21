@@ -47,101 +47,110 @@ const metaSchema = z.object({
   title: z.string().max(255).optional(),
   company: z.string().max(255).optional(),
 });
-const textSchema = metaSchema.extend({ text: z.string().min(1, "Paste the job description text") });
-const urlSchema = metaSchema.extend({ url: z.string().url("Enter a valid URL") });
 
-type TextValues = z.infer<typeof textSchema>;
-type UrlValues = z.infer<typeof urlSchema>;
+type Meta = z.infer<typeof metaSchema>;
 
-export const TextJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated }) => {
-  const form = useForm<TextValues>({ resolver: zodResolver(textSchema) });
-  const generalError = useServerFieldError(error, ["text"], ({ field, message }) =>
-    form.setError(field as keyof TextValues, { type: "server", message }),
-  );
-  return (
-    <form
-      className={FORM_CLASS}
-      onSubmit={surfacedElsewhere(
-        form.handleSubmit(async (values) => {
-          await onSubmit({ mode: "text", ...values });
-          form.reset();
-          onCreated();
-        }),
-      )}
-    >
-      <MetaFields
-        idPrefix="jd-text"
-        title={form.register("title")}
-        company={form.register("company")}
-      />
-      <FormField
-        label="Job description text"
-        htmlFor="jd-text-text"
-        error={form.formState.errors.text?.message}
-        required
-      >
-        <Textarea
-          id="jd-text-text"
-          rows={10}
-          placeholder="Paste the full job posting text here…"
-          {...form.register("text")}
-        />
-      </FormField>
-      <ErrorMessage error={generalError} />
-      <FormActions
-        isPending={isPending}
-        testId="create-jd-submit-text"
-        idleLabel="Add job description"
-        pendingLabel="Adding…"
-      />
-    </form>
-  );
+/**
+ * Text and URL are the same form with one required field: they differ only
+ * in that field's validation, control and labels, and in the `CreateJdInput`
+ * it becomes. Internally the field is always `value`; `toInput` maps it back.
+ */
+interface ValueModeConfig {
+  field: "text" | "url";
+  schema: z.ZodString;
+  label: string;
+  hint?: string;
+  placeholder: string;
+  /** Rows → a multi-line textarea; absent → a single-line input. */
+  rows?: number;
+  idleLabel: string;
+  pendingLabel: string;
+  toInput: (value: string, meta: Meta) => CreateJdInput;
+}
+
+const VALUE_MODES: Record<"text" | "url", ValueModeConfig> = {
+  text: {
+    field: "text",
+    schema: z.string().min(1, "Paste the job description text"),
+    label: "Job description text",
+    placeholder: "Paste the full job posting text here…",
+    rows: 10,
+    idleLabel: "Add job description",
+    pendingLabel: "Adding…",
+    toInput: (text, meta) => ({ mode: "text", text, ...meta }),
+  },
+  url: {
+    field: "url",
+    schema: z.string().url("Enter a valid URL"),
+    label: "Job posting URL",
+    hint: "We fetch and store the posting text",
+    placeholder: "https://careers.example.com/jobs/123",
+    idleLabel: "Fetch and add",
+    pendingLabel: "Fetching…",
+    toInput: (url, meta) => ({ mode: "url", url, ...meta }),
+  },
 };
 
-export const UrlJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated }) => {
-  const form = useForm<UrlValues>({ resolver: zodResolver(urlSchema) });
-  const generalError = useServerFieldError(error, ["url"], ({ field, message }) =>
-    form.setError(field as keyof UrlValues, { type: "server", message }),
-  );
-  return (
-    <form
-      className={FORM_CLASS}
-      onSubmit={surfacedElsewhere(
-        form.handleSubmit(async (values) => {
-          await onSubmit({ mode: "url", ...values });
-          form.reset();
-          onCreated();
-        }),
-      )}
-    >
-      <MetaFields
-        idPrefix="jd-url"
-        title={form.register("title")}
-        company={form.register("company")}
-      />
-      <FormField
-        label="Job posting URL"
-        htmlFor="jd-url-url"
-        hint="We fetch and store the posting text"
-        error={form.formState.errors.url?.message}
-        required
+function makeValueJdForm(mode: "text" | "url"): JdCreateForm {
+  const config = VALUE_MODES[mode];
+  const schema = metaSchema.extend({ value: config.schema });
+  type Values = z.infer<typeof schema>;
+  const idPrefix = `jd-${mode}`;
+  const fieldId = `${idPrefix}-${config.field}`;
+
+  return function ValueJdForm({ onSubmit, isPending, error, onCreated }) {
+    const form = useForm<Values>({ resolver: zodResolver(schema) });
+    const generalError = useServerFieldError(error, [config.field], ({ message }) =>
+      form.setError("value", { type: "server", message }),
+    );
+    return (
+      <form
+        className={FORM_CLASS}
+        onSubmit={surfacedElsewhere(
+          form.handleSubmit(async ({ value, ...meta }) => {
+            await onSubmit(config.toInput(value, meta));
+            form.reset();
+            onCreated();
+          }),
+        )}
       >
-        <Input
-          id="jd-url-url"
-          placeholder="https://careers.example.com/jobs/123"
-          {...form.register("url")}
+        <MetaFields
+          idPrefix={idPrefix}
+          title={form.register("title")}
+          company={form.register("company")}
         />
-      </FormField>
-      <ErrorMessage error={generalError} />
-      <FormActions
-        isPending={isPending}
-        testId="create-jd-submit-url"
-        idleLabel="Fetch and add"
-        pendingLabel="Fetching…"
-      />
-    </form>
-  );
-};
+        <FormField
+          label={config.label}
+          htmlFor={fieldId}
+          hint={config.hint}
+          error={form.formState.errors.value?.message}
+          required
+        >
+          {config.rows ? (
+            <Textarea
+              id={fieldId}
+              rows={config.rows}
+              placeholder={config.placeholder}
+              {...form.register("value")}
+            />
+          ) : (
+            <Input id={fieldId} placeholder={config.placeholder} {...form.register("value")} />
+          )}
+        </FormField>
+        <ErrorMessage error={generalError} />
+        <FormActions
+          isPending={isPending}
+          testId={`create-jd-submit-${mode}`}
+          idleLabel={config.idleLabel}
+          pendingLabel={config.pendingLabel}
+        />
+      </form>
+    );
+  };
+}
+
+export const TextJdForm = makeValueJdForm("text");
+export const UrlJdForm = makeValueJdForm("url");
 
 export const FileJdForm: JdCreateForm = ({ onSubmit, isPending, error, onCreated }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
