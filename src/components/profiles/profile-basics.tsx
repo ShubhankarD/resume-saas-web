@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { SectionHeader } from "@/components/ui/page-header";
@@ -89,9 +90,24 @@ export function ProfileBasics({
           />
         </FormField>
 
-        <FormField label="Tagline" htmlFor="profile-tagline">
+        <FormField
+          label="Tagline"
+          htmlFor="profile-tagline"
+          hint={
+            taglineKeys.length === 0 ? (
+              <>
+                Your library has no taglines yet, so the preview can&apos;t render.{" "}
+                <Link href="/content/taglines" className="underline underline-offset-2">
+                  Add a tagline
+                </Link>{" "}
+                to fix it.
+              </>
+            ) : undefined
+          }
+        >
           <select
             id="profile-tagline"
+            aria-describedby={taglineKeys.length === 0 ? "profile-tagline-hint" : undefined}
             className="h-10 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 transition-[color,background-color,border-color,box-shadow] duration-150 ease-out outline-none hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-700 dark:focus:border-slate-600 dark:focus:ring-white/10"
             value={draft.tagline}
             onChange={(e) => onChange({ tagline: e.target.value })}
