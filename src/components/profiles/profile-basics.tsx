@@ -96,8 +96,11 @@ export function ProfileBasics({
             value={draft.tagline}
             onChange={(e) => onChange({ tagline: e.target.value })}
           >
-            {taglineKeys.length === 0 && <option value={draft.tagline}>{draft.tagline}</option>}
-            {taglineKeys.map((key) => (
+            {/* A tagline no longer in the library must stay visible, not be masked by the first option. */}
+            {(taglineKeys.includes(draft.tagline)
+              ? taglineKeys
+              : [draft.tagline, ...taglineKeys]
+            ).map((key) => (
               <option key={key} value={key}>
                 {key}
               </option>

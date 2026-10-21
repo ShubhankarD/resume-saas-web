@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newProfileDraft, profileNameSchema } from "./profile-defaults";
+import { defaultTaglineKey, newProfileDraft, profileNameSchema } from "./profile-defaults";
 
 describe("newProfileDraft", () => {
   it("carries the identity and starts as an empty one-page resume", () => {
@@ -13,6 +13,18 @@ describe("newProfileDraft", () => {
       education: null,
       skills_order: [],
     });
+  });
+});
+
+describe("defaultTaglineKey", () => {
+  it("prefers 'default', else the first key, else 'default'", () => {
+    expect(defaultTaglineKey(["fde", "default"])).toBe("default");
+    expect(defaultTaglineKey(["fde", "swe"])).toBe("fde");
+    expect(defaultTaglineKey([])).toBe("default");
+  });
+
+  it("is what a new profile starts on", () => {
+    expect(newProfileDraft({ name: "a", label: "A" }, ["fde"]).tagline).toBe("fde");
   });
 });
 
