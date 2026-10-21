@@ -29,9 +29,12 @@ type CreateForm = z.infer<typeof createSchema>;
 export function ProfileCreateSheet({
   open,
   onOpenChange,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called with the new profile's id once it exists (the page decides where to go). */
+  onCreated: (profileId: string) => void;
 }) {
   const createProfile = useCreateProfile();
   const {
@@ -61,7 +64,7 @@ export function ProfileCreateSheet({
               const profile = await createProfile.mutateAsync(newProfileDraft(values));
               reset();
               onOpenChange(false);
-              window.location.href = `/profiles/${profile.id}`;
+              onCreated(profile.id);
             }),
           )}
           className="flex flex-col gap-4"

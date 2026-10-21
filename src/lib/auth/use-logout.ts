@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/lib/auth/store";
-import { clearTokens, readRefreshToken } from "@/lib/auth/token-storage";
+import { discardLocalSession } from "@/lib/auth/session";
+import { readRefreshToken } from "@/lib/auth/token-storage";
 import { logoutRequest } from "@/lib/auth/api";
 
 /**
@@ -13,7 +13,6 @@ import { logoutRequest } from "@/lib/auth/api";
  */
 export function useLogout() {
   const router = useRouter();
-  const clearSession = useAuthStore((s) => s.clearSession);
 
   return async function logout() {
     const refreshToken = readRefreshToken();
@@ -24,8 +23,7 @@ export function useLogout() {
         // Ignore — we clear the local session either way.
       }
     }
-    clearTokens();
-    clearSession();
+    discardLocalSession();
     router.push("/login");
   };
 }

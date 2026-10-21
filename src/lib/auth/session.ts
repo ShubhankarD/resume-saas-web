@@ -54,6 +54,12 @@ export function refreshSession(): Promise<RefreshOutcome> {
   return inFlightRefresh;
 }
 
+/** Forget the session locally: stored refresh token and in-memory auth state. */
+export function discardLocalSession(): void {
+  clearTokens();
+  useAuthStore.getState().clearSession();
+}
+
 /**
  * The browser `AuthSession`: access token in memory (Zustand store),
  * refresh token in localStorage (plans/phase-F2-auth.md). A failed refresh
@@ -64,8 +70,7 @@ export const browserAuthSession: AuthSession = {
   async refresh() {
     const outcome = await refreshSession();
     if (outcome === "refreshed") return true;
-    clearTokens();
-    useAuthStore.getState().clearSession();
+    discardLocalSession();
     return false;
   },
 };
